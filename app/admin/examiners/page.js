@@ -49,7 +49,7 @@ export default function ExaminersPage() {
     first_name: "",
     last_name: "",
     password: "",
-    password_confirm: "",
+    role: "examiner",
   });
   const [submitting, setSubmitting] = useState(false);
 
@@ -72,6 +72,7 @@ export default function ExaminersPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
+    console.log("Examiner created:", formData);
 
     try {
       await api.post("/exams/admin/examiners/", formData);
@@ -118,12 +119,12 @@ export default function ExaminersPage() {
       first_name: "",
       last_name: "",
       password: "",
-      password_confirm: "",
-    });
+      role: "examiner",});
   };
 
   const filteredExaminers = examiners.filter((examiner) =>
-    examiner.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    examiner.first_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    examiner.last_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     examiner.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
     examiner.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -142,6 +143,7 @@ export default function ExaminersPage() {
             Manage examiner accounts and permissions
           </p>
         </div>
+        {/* Add Examiner Button */}
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={resetForm}>
@@ -220,18 +222,6 @@ export default function ExaminersPage() {
                 />
               </div>
               
-              <div className="space-y-2">
-                <Label htmlFor="password_confirm">Confirm Password</Label>
-                <Input
-                  id="password_confirm"
-                  type="password"
-                  value={formData.password_confirm}
-                  onChange={(e) =>
-                    setFormData({ ...formData, password_confirm: e.target.value })
-                  }
-                  required
-                />
-              </div>
               
               <DialogFooter>
                 <Button
@@ -291,7 +281,7 @@ export default function ExaminersPage() {
                 filteredExaminers.map((examiner) => (
                   <TableRow key={examiner.id}>
                     <TableCell className="font-medium">
-                      {examiner.full_name}
+                      {examiner.first_name + " " + examiner.last_name}
                     </TableCell>
                     <TableCell>{examiner.username}</TableCell>
                     <TableCell>{examiner.email}</TableCell>
