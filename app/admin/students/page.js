@@ -5,6 +5,7 @@ import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -59,14 +60,18 @@ export default function StudentsPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterProgram, setFilterProgram] = useState("all");
+  const [filterLevel, setFilterLevel] = useState("all");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState(null);
   const [deleteDialog, setDeleteDialog] = useState({ open: false, id: null });
+  const [bulkDeleteDialog, setBulkDeleteDialog] = useState(false);
+  const [selectedStudents, setSelectedStudents] = useState([]);
   const [formData, setFormData] = useState({
     index_number: "",
     full_name: "",
     program_id: "",
-    is_active: false,
+    level: "100",
+    is_active: true,
   });
   const [submitting, setSubmitting] = useState(false);
 
@@ -128,6 +133,7 @@ export default function StudentsPage() {
       index_number: student.index_number,
       full_name: student.full_name,
       program_id: student.program.id,
+      level: student.level,
       is_active: student.is_active,
     });
     setDialogOpen(true);
@@ -145,11 +151,25 @@ export default function StudentsPage() {
     }
   };
 
+  const handleBulkDelete = async () => {
+    try {
+      await api.post("/exams/students/bulk-delete/", {
+        student_ids: selectedStudents,
+      });
+      toast.success(`Successfully deleted ${selectedStudents.length} student(s)`);
+      setBulkDeleteDialog(false);
+      setSelectedStudents([]);
+      fetchData();
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.error || "Failed to delete students");
+    }
+  };
+
   const handleToggleActive = async (id) => {
     try {
       await api.post(`/exams/admin/students/${id}/toggle_active/`);
       toast.success("Status updated successfully");
-      console.log("Toggled active status for student ID:", id);
       fetchData();
     } catch (err) {
       console.error(err);
@@ -160,14 +180,17 @@ export default function StudentsPage() {
   const handleExport = async () => {
     try {
       const params = {
-        export: exportFormat, // Changed to 'export' parameter
+        export: exportFormat,
       };
 
       if (filterProgram !== "all") {
         params.program_id = filterProgram;
       }
 
-      // Use the viewset URL with export parameter
+      if (filterLevel !== "all") {
+        params.level = filterLevel;
+      }
+
       const response = await api.get("/exams/admin/students/", {
         params,
         responseType: "blob",
@@ -279,9 +302,26 @@ export default function StudentsPage() {
       index_number: "",
       full_name: "",
       program_id: "",
+      level: "100",
       is_active: true,
     });
     setEditingStudent(null);
+  };
+
+  const handleSelectAll = (checked) => {
+    if (checked) {
+      setSelectedStudents(filteredStudents.map((s) => s.id));
+    } else {
+      setSelectedStudents([]);
+    }
+  };
+
+  const handleSelectStudent = (studentId, checked) => {
+    if (checked) {
+      setSelectedStudents([...selectedStudents, studentId]);
+    } else {
+      setSelectedStudents(selectedStudents.filter((id) => id !== studentId));
+    }
   };
 
   const filteredStudents = students.filter((student) => {
@@ -290,8 +330,14 @@ export default function StudentsPage() {
       student.index_number.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesProgram =
       filterProgram === "all" || student.program.id === parseInt(filterProgram);
-    return matchesSearch && matchesProgram;
+    const matchesLevel =
+      filterLevel === "all" || student.level === filterLevel;
+    return matchesSearch && matchesProgram && matchesLevel;
   });
+
+  const allSelected = filteredStudents.length > 0 && 
+    selectedStudents.length === filteredStudents.length;
+  const someSelected = selectedStudents.length > 0 && !allSelected;
 
   if (loading) {
     return <div className="p-6">Loading...</div>;
@@ -300,45 +346,6 @@ export default function StudentsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      {/* <div className="flex flex-col md:flex-row gap-2 items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Students</h2>
-          <p className="text-muted-foreground">
-            Manage student records and enrollments
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={handleExport}>
-            <Download className="mr-2 h-4 w-4" />
-            Export
-          </Button>
-          <label htmlFor="import-file">
-            <Button variant="outline" asChild>
-              <span>
-                <Upload className="mr-2 h-4 w-4" />
-                Import
-              </span>
-            </Button>
-          </label>
-          <input
-            id="import-file"
-            type="file"
-            accept=".xlsx,.csv"
-            className="hidden"
-            onChange={handleImport}
-          />
-          <Button
-            onClick={() => {
-              resetForm();
-              setDialogOpen(true);
-            }}
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Add Student
-          </Button>
-        </div>
-      </div> */}
-
       <div className="flex flex-col justify-between gap-2">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Students</h2>
@@ -398,7 +405,7 @@ export default function StudentsPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-wrap">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
@@ -409,7 +416,7 @@ export default function StudentsPage() {
           />
         </div>
         <Select value={filterProgram} onValueChange={setFilterProgram}>
-          <SelectTrigger className="w-64">
+          <SelectTrigger className="w-48">
             <SelectValue placeholder="Filter by program" />
           </SelectTrigger>
           <SelectContent>
@@ -421,20 +428,59 @@ export default function StudentsPage() {
             ))}
           </SelectContent>
         </Select>
+
+        <Select value={filterLevel} onValueChange={setFilterLevel}>
+          <SelectTrigger className="w-40">
+            <SelectValue placeholder="Filter by level" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Levels</SelectItem>
+            <SelectItem value="100">Level 100</SelectItem>
+            <SelectItem value="200">Level 200</SelectItem>
+            <SelectItem value="300">Level 300</SelectItem>
+            <SelectItem value="400">Level 400</SelectItem>
+          </SelectContent>
+        </Select>
+
+        {selectedStudents.length > 0 && (
+          <Button
+            variant="destructive"
+            onClick={() => setBulkDeleteDialog(true)}
+          >
+            <Trash2 className="mr-2 h-4 w-4" />
+            Delete Selected ({selectedStudents.length})
+          </Button>
+        )}
       </div>
 
       {/* Table */}
       <Card>
         <CardHeader>
-          <CardTitle>All Students ({filteredStudents.length})</CardTitle>
+          <CardTitle>
+            All Students ({filteredStudents.length})
+            {selectedStudents.length > 0 && (
+              <span className="ml-2 text-sm font-normal text-muted-foreground">
+                • {selectedStudents.length} selected
+              </span>
+            )}
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-12">
+                  <Checkbox
+                    checked={allSelected}
+                    onCheckedChange={handleSelectAll}
+                    aria-label="Select all"
+                    className={someSelected ? "opacity-50" : ""}
+                  />
+                </TableHead>
                 <TableHead>Index Number</TableHead>
                 <TableHead>Full Name</TableHead>
                 <TableHead>Program</TableHead>
+                <TableHead>Level</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -442,18 +488,30 @@ export default function StudentsPage() {
             <TableBody>
               {filteredStudents.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-6">
+                  <TableCell colSpan={7} className="text-center py-6">
                     No students found
                   </TableCell>
                 </TableRow>
               ) : (
                 filteredStudents.map((student) => (
                   <TableRow key={student.id}>
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedStudents.includes(student.id)}
+                        onCheckedChange={(checked) =>
+                          handleSelectStudent(student.id, checked)
+                        }
+                        aria-label={`Select ${student.full_name}`}
+                      />
+                    </TableCell>
                     <TableCell className="font-medium">
                       {student.index_number}
                     </TableCell>
                     <TableCell>{student.full_name}</TableCell>
                     <TableCell>{student.program.name}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline">L{student.level}</Badge>
+                    </TableCell>
                     <TableCell>
                       <Badge
                         variant={student.is_active ? "success" : "destructive"}
@@ -559,6 +617,26 @@ export default function StudentsPage() {
               </Select>
             </div>
 
+            <div className="space-y-2">
+              <Label htmlFor="level">Level</Label>
+              <Select
+                value={formData.level}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, level: value })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select level" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="100">Level 100 (First Year)</SelectItem>
+                  <SelectItem value="200">Level 200 (Second Year)</SelectItem>
+                  <SelectItem value="300">Level 300 (Third Year)</SelectItem>
+                  <SelectItem value="400">Level 400 (Fourth Year)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             <DialogFooter>
               <Button
                 type="button"
@@ -602,6 +680,28 @@ export default function StudentsPage() {
               className="bg-destructive"
             >
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk Delete Dialog */}
+      <AlertDialog open={bulkDeleteDialog} onOpenChange={setBulkDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Multiple Students?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You are about to delete {selectedStudents.length} student(s). This
+              action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkDelete}
+              className="bg-destructive"
+            >
+              Delete {selectedStudents.length} Student(s)
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
