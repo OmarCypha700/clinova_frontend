@@ -51,7 +51,7 @@ export default function Navbar() {
         className="font-bold text-xl text-white cursor-pointer"
         onClick={() => router.push("/")}
       >
-        <Image src="/clinova-nobg.png" alt="Logo" width={100} height={100} priority />
+        <Image src="/ClinOva-nobg.webp" alt="Logo" width={100} height={100} priority />
         {/* ClinOva */}
       </div>
 
