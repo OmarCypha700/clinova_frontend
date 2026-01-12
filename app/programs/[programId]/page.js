@@ -75,8 +75,6 @@ export default function StudentsPage() {
       '200': 'Level 200',
       '300': 'Level 300',
       '400': 'Level 400',
-      '500': 'Level 500',
-      '600': 'Level 600',
     };
     return labels[level] || `Level ${level}`;
   };

@@ -82,7 +82,8 @@ export default function ExaminersPage() {
       fetchExaminers();
     } catch (err) {
       console.error(err);
-      const errorMsg = err.response?.data?.password?.[0] || "Failed to create examiner";
+      const errorMsg =
+        err.response?.data?.password?.[0] || "Failed to create examiner";
       toast.error(errorMsg);
     } finally {
       setSubmitting(false);
@@ -119,14 +120,16 @@ export default function ExaminersPage() {
       first_name: "",
       last_name: "",
       password: "",
-      role: "examiner",});
+      role: "examiner",
+    });
   };
 
-  const filteredExaminers = examiners.filter((examiner) =>
-    examiner.first_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    examiner.last_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    examiner.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    examiner.email.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredExaminers = examiners.filter(
+    (examiner) =>
+      examiner.first_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      examiner.last_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      examiner.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      examiner.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   if (loading) {
@@ -183,7 +186,7 @@ export default function ExaminersPage() {
                   />
                 </div>
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="username">Username</Label>
                 <Input
@@ -195,7 +198,7 @@ export default function ExaminersPage() {
                   required
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -208,7 +211,7 @@ export default function ExaminersPage() {
                   required
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
                 <Input
@@ -221,8 +224,7 @@ export default function ExaminersPage() {
                   required
                 />
               </div>
-              
-              
+
               <DialogFooter>
                 <Button
                   type="button"
@@ -342,7 +344,10 @@ export default function ExaminersPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive">
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive"
+            >
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
+import DashboardSkeleton from "@/components/DashboardSkeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -60,32 +61,6 @@ export default function GradesPage() {
       toast.error("Failed to load programs");
     }
   };
-
-  //   const fetchGrades = async () => {
-  //     try {
-  //       setLoading(true);
-  //       const params = {
-  //         sort_by: sortBy,
-  //         order: sortOrder,
-  //       };
-
-  //       if (filterProgram !== "all") {
-  //         params.program_id = filterProgram;
-  //       }
-
-  //       if (searchQuery) {
-  //         params.search = searchQuery;
-  //       }
-
-  //       const res = await api.get("/exams/admin/grades/", { params });
-  //       setGrades(res.data);
-  //       setLoading(false);
-  //     } catch (err) {
-  //       console.error(err);
-  //       toast.error("Failed to load grades");
-  //       setLoading(false);
-  //     }
-  //   };
 
   const fetchGrades = async () => {
     try {
@@ -196,7 +171,9 @@ export default function GradesPage() {
   };
 
   if (loading && grades.length === 0) {
-    return <div className="p-6">Loading...</div>;
+    return <DashboardSkeleton 
+      statsCount={3}
+    />;
   }
 
   return (
@@ -404,7 +381,8 @@ export default function GradesPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-center text-sm">
-                        {student.reconciled_count} / 4 {/*{student.procedures_count} */}
+                        {student.reconciled_count} / 4{" "}
+                        {/*{student.procedures_count} */}
                       </TableCell>
                     </TableRow>
                   ))

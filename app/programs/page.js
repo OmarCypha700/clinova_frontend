@@ -84,7 +84,7 @@ export default function ProgramsPage() {
                 <CardHeader className="space-y-3">
                   <div className="flex items-center justify-between">
                     <Icon className="h-6 w-6 text-primary" />
-                    <Badge variant="secondary" >
+                    <Badge>
                       {program.abbreviation
                         ? program.abbreviation.replace("_", " ")
                         : "General"}

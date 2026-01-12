@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
+import DashboardSkeleton from "@/components/DashboardSkeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -156,7 +157,9 @@ export default function StudentsPage() {
       await api.post("/exams/students/bulk-delete/", {
         student_ids: selectedStudents,
       });
-      toast.success(`Successfully deleted ${selectedStudents.length} student(s)`);
+      toast.success(
+        `Successfully deleted ${selectedStudents.length} student(s)`
+      );
       setBulkDeleteDialog(false);
       setSelectedStudents([]);
       fetchData();
@@ -166,13 +169,32 @@ export default function StudentsPage() {
     }
   };
 
-  const handleToggleActive = async (id) => {
+  const handleToggleActive = async (id, currentStatus) => {
     try {
+      // Optimistically update the UI
+      setStudents((prevStudents) =>
+        prevStudents.map((student) =>
+          student.id === id
+            ? { ...student, is_active: !student.is_active }
+            : student
+        )
+      );
+
       await api.post(`/exams/admin/students/${id}/toggle_active/`);
-      toast.success("Status updated successfully");
+      toast.success(
+        `Student ${!currentStatus ? "activated" : "deactivated"} successfully`
+      );
+
+      // Fetch fresh data to ensure consistency
       fetchData();
     } catch (err) {
       console.error(err);
+      // Revert the optimistic update on error
+      setStudents((prevStudents) =>
+        prevStudents.map((student) =>
+          student.id === id ? { ...student, is_active: currentStatus } : student
+        )
+      );
       toast.error("Failed to update status");
     }
   };
@@ -330,17 +352,19 @@ export default function StudentsPage() {
       student.index_number.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesProgram =
       filterProgram === "all" || student.program.id === parseInt(filterProgram);
-    const matchesLevel =
-      filterLevel === "all" || student.level === filterLevel;
+    const matchesLevel = filterLevel === "all" || student.level === filterLevel;
     return matchesSearch && matchesProgram && matchesLevel;
   });
 
-  const allSelected = filteredStudents.length > 0 && 
+  const allSelected =
+    filteredStudents.length > 0 &&
     selectedStudents.length === filteredStudents.length;
   const someSelected = selectedStudents.length > 0 && !allSelected;
 
   if (loading) {
-    return <div className="p-6">Loading...</div>;
+    return <DashboardSkeleton
+      showStats={false}
+    />;
   }
 
   return (
@@ -514,7 +538,12 @@ export default function StudentsPage() {
                     </TableCell>
                     <TableCell>
                       <Badge
-                        variant={student.is_active ? "success" : "destructive"}
+                        // variant={student.is_active ? "default" : "secondary"}
+                        className={
+                          student.is_active
+                            ? "bg-green-600 hover:bg-green-700"
+                            : "bg-red-500 hover:bg-red-600"
+                        }
                       >
                         {student.is_active ? "Active" : "Inactive"}
                       </Badge>
@@ -524,12 +553,19 @@ export default function StudentsPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleToggleActive(student.id)}
+                          onClick={() =>
+                            handleToggleActive(student.id, student.is_active)
+                          }
+                          title={
+                            student.is_active
+                              ? "Deactivate student"
+                              : "Activate student"
+                          }
                         >
                           {student.is_active ? (
-                            <UserX className="h-4 w-4" />
+                            <UserX className="h-4 w-4 text-red-500" />
                           ) : (
-                            <UserCheck className="h-4 w-4" />
+                            <UserCheck className="h-4 w-4 text-green-500" />
                           )}
                         </Button>
                         <Button

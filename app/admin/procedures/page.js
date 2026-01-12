@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api";
+import DashboardSkeleton from "@/components/DashboardSkeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -266,7 +267,9 @@ export default function ProceduresPage() {
   });
 
   if (loading) {
-    return <div className="p-6">Loading...</div>;
+    return <DashboardSkeleton 
+      showStats={false}
+    />;
   }
 
   return (

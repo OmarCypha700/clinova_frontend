@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/api";
@@ -45,12 +46,13 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="sticky top-0 z-50 bg-black shadow-md border-b px-6 py-3 flex items-center justify-between">
+    <nav className="sticky top-0 z-50 bg-white shadow-md border-b px-6 py-3 flex items-center justify-between">
       <div
         className="font-bold text-xl text-white cursor-pointer"
         onClick={() => router.push("/")}
       >
-        Nursing Practical App
+        <Image src="/clinova-nobg.png" alt="Logo" width={100} height={100} priority />
+        {/* ClinOva */}
       </div>
 
       {isAuthenticated && (
@@ -58,7 +60,7 @@ export default function Navbar() {
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
-              className="p-0 rounded-full flex items-center gap-1 hover:bg-black"
+              className="p-0 rounded-full flex items-center gap-1 hover:bg-gray-100"
             >
               <Avatar>
                 {/* <AvatarImage src="/avatar.png" alt="User" /> */}
@@ -66,7 +68,7 @@ export default function Navbar() {
                   <User className="h-6 w-6 text-primary" />
                 </AvatarFallback>
               </Avatar>
-              <ChevronDown className="text-white" />
+              <ChevronDown className="text-black" />
             </Button>
           </DropdownMenuTrigger>
 
