@@ -92,7 +92,7 @@ export default function AssessmentOptionsPage() {
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div>
-          <h1 className="text-3xl uppercase font-bold">Assessment Options</h1>
+          <h1 className="text-2xl uppercase font-bold">Assessment Options</h1>
         </div>
       </div>
 
@@ -138,7 +138,7 @@ export default function AssessmentOptionsPage() {
             </div>
             <CardTitle className="text-2xl">Care Plan</CardTitle>
             <CardDescription>
-              Score student's care plan (single examiner)
+              Score student's care plan
             </CardDescription>
           </CardHeader>
           <CardContent>

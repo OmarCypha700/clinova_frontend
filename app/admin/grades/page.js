@@ -594,7 +594,7 @@ export default function GradesPage() {
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Student Grades</h2>
           <p className="text-muted-foreground">
-            View and export student performance data (Procedures + Care Plan)
+            View and export student performance data
           </p>
         </div>
         <div className="flex flex-wrap md:flex-nowrap items-center gap-2">
