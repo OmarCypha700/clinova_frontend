@@ -478,7 +478,7 @@ export default function StudentsPage() {
       </div>
 
       {/* Table */}
-      <Card>
+      <Card className="h-[70vh] overflow-y-auto">
         <CardHeader>
           <CardTitle>
             All Students ({filteredStudents.length})

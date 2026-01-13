@@ -52,7 +52,6 @@ export default function Navbar() {
         onClick={() => router.push("/")}
       >
         <Image src="/ClinOva-nobg.webp" alt="Logo" width={100} height={100} priority />
-        {/* ClinOva */}
       </div>
 
       {isAuthenticated && (
