@@ -1,7 +1,7 @@
 import "./globals.css";
 import { AuthProvider } from "@/hooks/useAuth";
 import { Toaster } from "@/components/ui/sonner";
-import { Suspense } from "react";
+// import { Suspense } from "react";
 
 export const metadata = {
   title: "ClinOva",

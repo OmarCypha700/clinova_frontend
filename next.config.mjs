@@ -13,8 +13,14 @@ const nextConfig = {
           },
           {
             key: "Content-Security-Policy",
-            value:
-              "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline';",
+            value: `
+              default-src 'self';
+              connect-src 'self' https://nursingpracticals.pythonanywhere.com;
+              img-src 'self' data: blob:;
+              script-src 'self' 'unsafe-inline' 'unsafe-eval';
+              style-src 'self' 'unsafe-inline';
+              font-src 'self' data:;
+            `.replace(/\s{2,}/g, " ").trim(),
           },
           {
             key: "X-Content-Type-Options",
