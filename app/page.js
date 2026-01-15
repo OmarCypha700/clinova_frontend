@@ -48,12 +48,12 @@ export default function LoginPage() {
         username,
         password,
       });
-      
+
       const { access, refresh, user } = res.data;
 
       // Store tokens
       login(access, refresh);
-      
+
       // Set the token immediately for this Axios instance
       api.defaults.headers.Authorization = `Bearer ${access}`;
 
@@ -75,66 +75,71 @@ export default function LoginPage() {
   };
 
   if (loading) {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="container mx-auto px-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-
-          {/* Left image skeleton, hidden on mobile */}
-          <div className="hidden md:block">
-            <div className="animate-pulse">
-              <div className="h-[420px] w-full rounded-xl bg-gray-200"></div>
-            </div>
-          </div>
-
-          {/* Right login form skeleton */}
-          <div className="w-full max-w-md mx-auto">
-            <div className="animate-pulse space-y-6">
-              {/* Title */}
-              <div className="h-8 bg-gray-200 rounded w-2/3 mx-auto"></div>
-
-              {/* Input fields */}
-              <div className="space-y-4">
-                <div className="h-12 bg-gray-200 rounded"></div>
-                <div className="h-12 bg-gray-200 rounded"></div>
-              </div>
-
-              {/* Button */}
-              <div className="h-12 bg-gray-200 rounded"></div>
-
-              {/* Extra links */}
-              <div className="flex justify-between">
-                <div className="h-4 bg-gray-200 rounded w-24"></div>
-                <div className="h-4 bg-gray-200 rounded w-20"></div>
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+            {/* Left image skeleton, hidden on mobile */}
+            <div className="hidden md:block">
+              <div className="animate-pulse">
+                <div className="h-[420px] w-full rounded-xl bg-gray-200"></div>
               </div>
             </div>
-          </div>
 
+            {/* Right login form skeleton */}
+            <div className="w-full max-w-md mx-auto">
+              <div className="animate-pulse space-y-6">
+                {/* Title */}
+                <div className="h-8 bg-gray-200 rounded w-2/3 mx-auto"></div>
+
+                {/* Input fields */}
+                <div className="space-y-4">
+                  <div className="h-12 bg-gray-200 rounded"></div>
+                  <div className="h-12 bg-gray-200 rounded"></div>
+                </div>
+
+                {/* Button */}
+                <div className="h-12 bg-gray-200 rounded"></div>
+
+                {/* Extra links */}
+                <div className="flex justify-between">
+                  <div className="h-4 bg-gray-200 rounded w-24"></div>
+                  <div className="h-4 bg-gray-200 rounded w-20"></div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
-  );
-}
-
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
       {/* Left illustration */}
-      <div className="hidden md:flex w-1/2 items-center justify-center  rounded-l-lg">
+      <div className="hidden md:flex w-1/2 items-center justify-center rounded-l-lg">
         <Image
           src="/ClinOva.webp"
           alt="Login illustration"
-          className="w-3/4 max-w-md"
-          width={500}
-          height={500}
+          width={1080}
+          height={720}
           priority
+          className="w-3/4 max-w-md"
+          sizes="(max-width: 768px) 100vw, 75vw"
         />
       </div>
 
       {/* Login form */}
       <div className="w-full m-auto md:w-1/2 flex flex-col items-center justify-center p-6 bg-white rounded-r-lg">
         <div className="flex items-center justify-center mb-6">
-          <Image src="/logo.webp" alt="Logo" width={90} height={90} priority />
+          <Image
+            src="/logo.webp"
+            fetchPriority="high"
+            alt="Logo"
+            width={90}
+            height={90}
+            priority
+          />
           <div className="ml-3">
             <p className="font-bold text-2xl text-center">NURSING</p>
             <p className="text-center">PRACTICALS APP</p>
@@ -170,7 +175,11 @@ export default function LoginPage() {
             disabled={submitting}
           />
 
-          <Button type="submit" className="w-full bg-gradient-to-r from-blue-400 to-green-400 text-white font-semibold" disabled={submitting}>
+          <Button
+            type="submit"
+            className="w-full bg-gradient-to-r from-blue-400 to-green-400 text-white font-semibold"
+            disabled={submitting}
+          >
             {submitting ? "Logging in..." : "Login"}
           </Button>
         </form>
