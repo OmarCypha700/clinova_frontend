@@ -52,7 +52,7 @@ export default function ProgramsPage() {
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6">Select Program</h1>
+      <h1 className="text-2xl uppercase text-center font-bold mb-6">Select Program</h1>
 
       <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
         {/* Skeleton loaders */}

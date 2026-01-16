@@ -42,7 +42,16 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Pencil, Trash2, Search, ListOrdered, Download, FileDown, Upload } from "lucide-react";
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  Search,
+  ListOrdered,
+  Download,
+  FileDown,
+  Upload,
+} from "lucide-react";
 import { toast } from "sonner";
 
 export default function ProceduresPage() {
@@ -267,9 +276,7 @@ export default function ProceduresPage() {
   });
 
   if (loading) {
-    return <DashboardSkeleton 
-      showStats={false}
-    />;
+    return <DashboardSkeleton showStats={false} />;
   }
 
   return (
@@ -366,7 +373,7 @@ export default function ProceduresPage() {
           <CardTitle>All Procedures ({filteredProcedures.length})</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
+          {/* <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Procedure Name</TableHead>
@@ -387,6 +394,69 @@ export default function ProceduresPage() {
                 filteredProcedures.map((procedure) => (
                   <TableRow key={procedure.id}>
                     <TableCell className="font-medium">
+                      {procedure.name}
+                    </TableCell>
+                    <TableCell>{procedure.program}</TableCell>
+                    <TableCell>{procedure.total_score}</TableCell>
+                    <TableCell>
+                      <Badge variant="secondary">
+                        {procedure.step_count || 0} steps
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <Link href={`/admin/procedures/${procedure.id}/steps`}>
+                          <Button variant="ghost" size="sm">
+                            <ListOrdered className="h-4 w-4" />
+                          </Button>
+                        </Link>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEdit(procedure)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() =>
+                            setDeleteDialog({ open: true, id: procedure.id })
+                          }
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table> */}
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="min-w-[12rem] max-w-xs truncate lg:truncate">
+                  Procedure Name
+                </TableHead>
+                <TableHead>Program</TableHead>
+                <TableHead>Total Score</TableHead>
+                <TableHead>Steps</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredProcedures.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-6">
+                    No procedures found
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredProcedures.map((procedure) => (
+                  <TableRow key={procedure.id}>
+                    <TableCell className="font-medium min-w-[12rem] max-w-xs truncate lg:truncate cursor-pointer"
+                    title={procedure.name}>
                       {procedure.name}
                     </TableCell>
                     <TableCell>{procedure.program}</TableCell>
@@ -521,34 +591,44 @@ export default function ProceduresPage() {
               Upload an Excel or CSV file with procedures and steps
             </DialogDescription>
           </DialogHeader>
-          
+
           {importFile && (
             <div className="py-4">
               <p className="text-sm text-muted-foreground mb-2">
-                Selected file: <span className="font-medium">{importFile.name}</span>
+                Selected file:{" "}
+                <span className="font-medium">{importFile.name}</span>
               </p>
-              
+
               {importResult && (
                 <div className="mt-4 p-4 bg-muted rounded-lg">
                   <h4 className="font-semibold mb-2">Import Results:</h4>
                   <ul className="text-sm space-y-1">
-                    <li>Procedures created: {importResult.procedures_created}</li>
-                    <li>Procedures updated: {importResult.procedures_updated}</li>
+                    <li>
+                      Procedures created: {importResult.procedures_created}
+                    </li>
+                    <li>
+                      Procedures updated: {importResult.procedures_updated}
+                    </li>
                     <li>Steps created: {importResult.steps_created}</li>
                     <li>Steps updated: {importResult.steps_updated}</li>
-                    <li className="text-destructive">Errors: {importResult.errors}</li>
+                    <li className="text-destructive">
+                      Errors: {importResult.errors}
+                    </li>
                   </ul>
-                  
-                  {importResult.error_details && importResult.error_details.length > 0 && (
-                    <div className="mt-3">
-                      <h5 className="font-medium text-sm mb-1">Error Details:</h5>
-                      <ul className="text-xs space-y-1 text-destructive max-h-40 overflow-y-auto">
-                        {importResult.error_details.map((error, idx) => (
-                          <li key={idx}>{error}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
+
+                  {importResult.error_details &&
+                    importResult.error_details.length > 0 && (
+                      <div className="mt-3">
+                        <h5 className="font-medium text-sm mb-1">
+                          Error Details:
+                        </h5>
+                        <ul className="text-xs space-y-1 text-destructive max-h-40 overflow-y-auto">
+                          {importResult.error_details.map((error, idx) => (
+                            <li key={idx}>{error}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                 </div>
               )}
             </div>
@@ -565,7 +645,10 @@ export default function ProceduresPage() {
             >
               Cancel
             </Button>
-            <Button onClick={handleImportSubmit} disabled={importing || !importFile}>
+            <Button
+              onClick={handleImportSubmit}
+              disabled={importing || !importFile}
+            >
               {importing ? "Importing..." : "Import"}
             </Button>
           </DialogFooter>

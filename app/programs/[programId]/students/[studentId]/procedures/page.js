@@ -150,7 +150,7 @@ export default function ProceduresPage() {
       <div className="p-4 max-w-3xl mx-auto">
         {/* Skeleton loaders */}
         {Array.from({ length: 6 }).map((_, i) => (
-            <Card key={i}>
+            <Card key={i} className="mb-4">
               <CardHeader className="space-y-3">
                 <Skeleton className="h-6 w-6 rounded-full" />
                 <Skeleton className="h-4 w-3/4" />

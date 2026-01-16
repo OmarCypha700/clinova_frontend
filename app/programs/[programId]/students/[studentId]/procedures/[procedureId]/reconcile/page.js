@@ -90,10 +90,73 @@ export default function ReconcilePage() {
     }
   };
 
+  // if (loading) {
+  //   return (
+  //     <div className="p-4 max-w-5xl mx-auto">
+  //       <p>Loading reconciliation data...</p>
+  //     </div>
+  //   );
+  // }
+
   if (loading) {
     return (
-      <div className="p-4 max-w-5xl mx-auto">
-        <p>Loading reconciliation data...</p>
+      <div className="p-4 max-w-5xl mx-auto space-y-6 animate-pulse">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="h-8 w-20 bg-gray-200 rounded" />
+            <div className="space-y-2">
+              <div className="h-5 w-48 bg-gray-200 rounded" />
+              <div className="h-3 w-36 bg-gray-200 rounded" />
+            </div>
+          </div>
+          <div className="h-6 w-24 bg-gray-200 rounded" />
+        </div>
+
+        <Separator />
+
+        {/* Examiners info */}
+        <div className="bg-gray-50 p-4 rounded-lg grid grid-cols-2 gap-4">
+          {[...Array(2)].map((_, i) => (
+            <div key={i} className="space-y-2">
+              <div className="h-3 w-24 bg-gray-200 rounded" />
+              <div className="h-4 w-40 bg-gray-200 rounded" />
+            </div>
+          ))}
+        </div>
+
+        {/* Alert placeholder */}
+        <div className="h-14 w-full bg-gray-200 rounded" />
+
+        {/* Table */}
+        <div className="border rounded-lg overflow-hidden">
+          {/* Table header */}
+          <div className="bg-gray-100 grid grid-cols-5 gap-4 p-4">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="h-4 bg-gray-200 rounded" />
+            ))}
+          </div>
+
+          {/* Table rows */}
+          {[...Array(4)].map((_, rowIndex) => (
+            <div key={rowIndex} className="grid grid-cols-5 gap-4 p-4 border-t">
+              <div className="h-4 w-6 bg-gray-200 rounded" />
+              <div className="h-4 w-full bg-gray-200 rounded col-span-1" />
+              <div className="h-8 w-8 bg-gray-200 rounded-full mx-auto" />
+              <div className="h-8 w-8 bg-gray-200 rounded-full mx-auto" />
+              <div className="flex justify-center gap-2">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="h-4 w-4 bg-gray-200 rounded-full" />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Save button */}
+        <div className="flex justify-end">
+          <div className="h-10 w-48 bg-gray-200 rounded" />
+        </div>
       </div>
     );
   }

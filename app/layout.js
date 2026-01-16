@@ -35,9 +35,7 @@ export default function RootLayout({ children }) {
       <body>
         <AuthProvider>
           <main>
-            {/* <Suspense fallback={<div>Loading...</div>}> */}
             {children}
-            {/* </Suspense> */}
           </main>
           <Toaster position="top-right" richColors />
         </AuthProvider>

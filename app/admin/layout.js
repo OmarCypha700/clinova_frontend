@@ -71,6 +71,7 @@ function NavItems({ pathname, onNavigate }) {
                 ? "bg-primary text-primary-foreground"
                 : "text-muted-foreground hover:bg-muted hover:text-foreground"
             )}
+            title={item.name}
           >
             <item.icon className="h-5 w-5" />
             {item.name}

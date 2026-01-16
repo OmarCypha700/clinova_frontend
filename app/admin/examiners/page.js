@@ -36,6 +36,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, Pencil, Trash2, Search, UserCheck, UserX } from "lucide-react";
 import { toast } from "sonner";
+import DashboardSkeleton from "@/components/DashboardSkeleton";
 
 export default function ExaminersPage() {
   const [examiners, setExaminers] = useState([]);
@@ -133,7 +134,7 @@ export default function ExaminersPage() {
   );
 
   if (loading) {
-    return <div className="p-6">Loading...</div>;
+    return <DashboardSkeleton showStats={false} />;
   }
 
   return (
