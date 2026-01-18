@@ -681,8 +681,8 @@ export default function GradesPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex items-center gap-2">
-        <div className="relative flex-1 max-w-sm">
+      <div className="flex flex-col md:flex-row items-center gap-2">
+        <div className="relative flex-1 w-full md:w-64">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search by name or index..."
@@ -691,6 +691,7 @@ export default function GradesPage() {
             className="pl-8"
           />
         </div>
+        <div className="w-full md:w-64">
         <Select value={filterProgram} onValueChange={setFilterProgram}>
           <SelectTrigger className="w-64">
             <SelectValue placeholder="Filter by program" />
@@ -704,6 +705,7 @@ export default function GradesPage() {
             ))}
           </SelectContent>
         </Select>
+        </div>
       </div>
 
       {/* Table */}

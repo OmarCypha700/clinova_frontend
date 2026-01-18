@@ -186,10 +186,7 @@ export default function ProcedureStepsPage() {
   };
 
   if (loading) {
-    return <DashboardSkeleton 
-      showStats={false}
-      showFilters={false}
-    />;
+    return <DashboardSkeleton showStats={false} showFilters={false} />;
   }
 
   if (!procedure) {
@@ -249,7 +246,9 @@ export default function ProcedureStepsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-20">Order</TableHead>
-                  <TableHead>Description</TableHead>
+                  <TableHead className="min-w-[12rem] max-w-xs truncate lg:truncate">
+                    Description
+                  </TableHead>
                   <TableHead className="w-32 text-center">Reorder</TableHead>
                   <TableHead className="w-32 text-right">Actions</TableHead>
                 </TableRow>
@@ -260,7 +259,12 @@ export default function ProcedureStepsPage() {
                     <TableCell className="font-medium">
                       {step.step_order}
                     </TableCell>
-                    <TableCell>{step.description}</TableCell>
+                    <TableCell
+                      className="font-medium min-w-[12rem] max-w-xs truncate lg:truncate cursor-pointer"
+                      title={step.description}
+                    >
+                      {step.description}
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center justify-center gap-1">
                         <Button

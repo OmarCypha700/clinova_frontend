@@ -189,7 +189,7 @@ export default function ProceduresPage() {
         toast.success(
           `Import successful! Procedures: ${response.data.procedures_created} created, ` +
             `${response.data.procedures_updated} updated. Steps: ${response.data.steps_created} created, ` +
-            `${response.data.steps_updated} updated.`
+            `${response.data.steps_updated} updated.`,
         );
         setTimeout(() => {
           setImportDialog(false);
@@ -216,7 +216,7 @@ export default function ProceduresPage() {
       if (editingProcedure) {
         await api.patch(
           `/exams/admin/procedures/${editingProcedure.id}/`,
-          formData
+          formData,
         );
         toast.success("Procedure updated successfully");
       } else {
@@ -342,8 +342,8 @@ export default function ProceduresPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex items-center gap-2">
-        <div className="relative flex-1 max-w-sm">
+      <div className="flex flex-col md:flex-row items-center gap-2">
+        <div className="relative flex-1 w-full md:w-64">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search procedures..."
@@ -352,19 +352,21 @@ export default function ProceduresPage() {
             className="pl-8"
           />
         </div>
-        <Select value={filterProgram} onValueChange={setFilterProgram}>
-          <SelectTrigger className="w-64">
-            <SelectValue placeholder="Filter by program" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Programs</SelectItem>
-            {programs.map((program) => (
-              <SelectItem key={program.id} value={program.id.toString()}>
-                {program.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="w-full md:w-64">
+          <Select value={filterProgram} onValueChange={setFilterProgram}>
+            <SelectTrigger className="w-64">
+              <SelectValue placeholder="Filter by program" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Programs</SelectItem>
+              {programs.map((program) => (
+                <SelectItem key={program.id} value={program.id.toString()}>
+                  {program.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Table */}
@@ -455,8 +457,10 @@ export default function ProceduresPage() {
               ) : (
                 filteredProcedures.map((procedure) => (
                   <TableRow key={procedure.id}>
-                    <TableCell className="font-medium min-w-[12rem] max-w-xs truncate lg:truncate cursor-pointer"
-                    title={procedure.name}>
+                    <TableCell
+                      className="uppercase font-medium min-w-[12rem] max-w-xs truncate lg:truncate cursor-pointer"
+                      title={procedure.name}
+                    >
                       {procedure.name}
                     </TableCell>
                     <TableCell>{procedure.program}</TableCell>
@@ -574,8 +578,8 @@ export default function ProceduresPage() {
                 {submitting
                   ? "Saving..."
                   : editingProcedure
-                  ? "Update Procedure"
-                  : "Create Procedure"}
+                    ? "Update Procedure"
+                    : "Create Procedure"}
               </Button>
             </DialogFooter>
           </form>

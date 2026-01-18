@@ -15,7 +15,7 @@ const nextConfig = {
             key: "Content-Security-Policy",
             value: `
               default-src 'self';
-              connect-src 'self' https://nursingpracticals.pythonanywhere.com;
+              connect-src 'self' https://nursingpracticals.pythonanywhere.com http://localhost:8000/api/;
               img-src 'self' data: blob:;
               script-src 'self' 'unsafe-inline' 'unsafe-eval';
               style-src 'self' 'unsafe-inline';
@@ -34,14 +34,6 @@ const nextConfig = {
       },
     ];
   },
-//   async rewrites() {
-//   return [
-//     {
-//       source: "/api/:path*",
-//       destination: "http://localhost:8000/api/:path*",
-//     },
-//   ];
-// },
   swcMinify: true,
   productionBrowserSourceMaps: false,
   compiler: {
@@ -50,11 +42,10 @@ const nextConfig = {
   },
   // Target modern browsers only
   experimental: {
-    browsersListForSwc: true,
+    // browsersListForSwc: true,
     optimizePackageImports: ["lucide-react", "date-fns"],
   },
   turbopack: {},
-  /* config options here */
 };
 
 const pwaConfig = withPWA({
@@ -62,9 +53,6 @@ const pwaConfig = withPWA({
   register: true,
   skipWaiting: true,
   disable: process.env.NODE_ENV === "development",
-  // Optional: customize service worker
-  // sw: 'service-worker.js',
-  // runtimeCaching: [], // Add custom caching strategies if needed
 });
 
 export default pwaConfig(nextConfig);

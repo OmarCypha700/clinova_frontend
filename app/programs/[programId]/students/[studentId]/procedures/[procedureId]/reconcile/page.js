@@ -81,7 +81,7 @@ export default function ReconcilePage() {
       });
 
       toast.success("Reconciliation saved successfully!");
-      router.push(`/programs/${programId}/students/${studentId}`);
+      router.push(`/programs/${programId}/students/${studentId}/procedures`);
     } catch (err) {
       console.error("Failed to save reconciliation", err);
       toast.error("Failed to save reconciliation. Please try again.");
@@ -174,7 +174,7 @@ export default function ReconcilePage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => router.back()}>
+          <Button variant="ghost" size="sm" onClick={() => router.push(`/programs/${programId}/students/${studentId}/procedures`)}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
           </Button>
