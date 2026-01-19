@@ -434,17 +434,17 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-// Reconciliation limits per program
-const PROGRAM_RECONCILIATION_LIMITS = {
-  "Registered General Nursing": 4,
-  // RGN: 4,
-  "Registered Midwifery": 5,
-  // RM: 5,
-  "Public Health Nursing": 4,
-};
+// // Reconciliation limits per program
+// const PROGRAM_RECONCILIATION_LIMITS = {
+//   "Registered General Nursing": 4,
+//   // RGN: 4,
+//   "Registered Midwifery": 5,
+//   // RM: 5,
+//   "Public Health Nursing": 4,
+// };
 
-// Default limit if program not found in config
-const DEFAULT_RECONCILIATION_LIMIT = 4;
+// // Default limit if program not found in config
+// const DEFAULT_RECONCILIATION_LIMIT = 4;
 
 export default function GradesPage() {
   const [grades, setGrades] = useState([]);
@@ -500,8 +500,8 @@ export default function GradesPage() {
     }
   };
 
-  const getReconciliationLimit = (programName) =>
-    PROGRAM_RECONCILIATION_LIMITS[programName] ?? DEFAULT_RECONCILIATION_LIMIT;
+  // const getReconciliationLimit = (programName) =>
+  //   PROGRAM_RECONCILIATION_LIMITS[programName] ?? DEFAULT_RECONCILIATION_LIMIT;
 
   const handleSort = (column) => {
     if (sortBy === column) {
@@ -769,7 +769,7 @@ export default function GradesPage() {
                     Grade
                     <SortIcon column="grade" />
                   </TableHead>
-                  <TableHead className="text-center">Status</TableHead>
+                  {/* <TableHead className="text-center">Status</TableHead> */}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -841,7 +841,7 @@ export default function GradesPage() {
                           {student.grade}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-center">
+                      {/* <TableCell className="text-center">
                         <div className="flex items-center justify-center gap-2">
                           <span className="text-xs">
                             {student.reconciled_count}/
@@ -853,7 +853,7 @@ export default function GradesPage() {
                             <XCircle className="h-4 w-4 text-gray-400" />
                           )}
                         </div>
-                      </TableCell>
+                      </TableCell> */}
                     </TableRow>
                   ))
                 )}
