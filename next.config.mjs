@@ -15,7 +15,7 @@ const nextConfig = {
             key: "Content-Security-Policy",
             value: `
               default-src 'self';
-              connect-src 'self' https://nursingpracticals.pythonanywhere.com http://localhost:8000/api/;
+              connect-src 'self' https://nursingpracticals.pythonanywhere.com http://*.localhost:8000/api/ http://localhost:8000/api/;
               img-src 'self' data: blob:;
               script-src 'self' 'unsafe-inline' 'unsafe-eval';
               style-src 'self' 'unsafe-inline';
