@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import { api } from "@/lib/api";
 
 import { Separator } from "@/components/ui/separator";
@@ -9,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, ArrowLeft, User } from "lucide-react";
+import { toast } from "sonner";
 
 export default function ProcedureStepsPage() {
   const { programId, studentId, procedureId } = useParams();
@@ -27,7 +29,7 @@ export default function ProcedureStepsPage() {
 
     // Fetch procedure details
     const fetchProcedure = api.get(
-      `/exams/students/${studentId}/procedures/${procedureId}/`
+      `/exams/students/${studentId}/procedures/${procedureId}/`,
     );
 
     // Fetch student details
@@ -76,81 +78,78 @@ export default function ProcedureStepsPage() {
         examinerBComplete: response.data.examiner_b_complete,
       });
     } catch (err) {
-      console.error("Autosave failed", err);
-      alert("Failed to save score. Please try again.");
+      // console.error("Autosave failed", err);
+      toast.error(
+        "Reconciliation in progress. Scores will not be saved.",
+      );
     } finally {
       setSavingStep(null);
     }
   };
 
-
   if (loading) {
-  return (
-    <div className="p-4 max-w-3xl mx-auto space-y-4 animate-pulse">
-      {/* Back button */}
-      <div className="h-8 w-24 bg-gray-200 rounded" />
-
-      {/* Student info card */}
-      <div className="p-4 border rounded-lg space-y-2">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 bg-gray-200 rounded-full" />
-          <div className="flex-1 space-y-2">
-            <div className="h-4 w-40 bg-gray-200 rounded" />
-            <div className="h-3 w-28 bg-gray-200 rounded" />
-          </div>
-          <div className="h-6 w-24 bg-gray-200 rounded" />
-        </div>
-      </div>
-
-      {/* Procedure title */}
-      <div className="h-6 w-3/4 bg-gray-200 rounded" />
-
-      {/* Progress indicator */}
-      <div className="h-3 w-40 bg-gray-200 rounded" />
-
-      {/* Steps container */}
-      <div className="p-4 border rounded-md space-y-4">
-        {/* Header row */}
-        <div className="flex justify-between items-center">
-          <div className="h-4 w-32 bg-gray-200 rounded" />
-          <div className="grid grid-cols-5 gap-4">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="h-4 w-6 bg-gray-200 rounded" />
-            ))}
-          </div>
-        </div>
-
-        <Separator className="bg-gray-300" />
-
-        {/* Step rows */}
-        {[...Array(4)].map((_, i) => (
-          <div key={i} className="space-y-3">
-            <div className="flex items-start justify-between gap-4">
-              <div className="h-4 w-3/4 bg-gray-200 rounded" />
-              <div className="grid grid-cols-5 gap-4">
-                {[...Array(5)].map((_, j) => (
-                  <div
-                    key={j}
-                    className="h-4 w-4 bg-gray-200 rounded-full"
-                  />
-                ))}
-              </div>
-            </div>
-            <Separator className="bg-gray-300" />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-
-  if (!procedure || !student) {
     return (
-      <div className="p-4 max-w-3xl mx-auto">
-        <p>Error loading data.</p>
+      <div className="p-4 max-w-3xl mx-auto space-y-4 animate-pulse">
+        {/* Back button */}
+        <div className="h-8 w-24 bg-gray-200 rounded" />
+
+        {/* Student info card */}
+        <div className="p-4 border rounded-lg space-y-2">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 bg-gray-200 rounded-full" />
+            <div className="flex-1 space-y-2">
+              <div className="h-4 w-40 bg-gray-200 rounded" />
+              <div className="h-3 w-28 bg-gray-200 rounded" />
+            </div>
+            <div className="h-6 w-24 bg-gray-200 rounded" />
+          </div>
+        </div>
+
+        {/* Procedure title */}
+        <div className="h-6 w-3/4 bg-gray-200 rounded" />
+
+        {/* Progress indicator */}
+        <div className="h-3 w-40 bg-gray-200 rounded" />
+
+        {/* Steps container */}
+        <div className="p-4 border rounded-md space-y-4">
+          {/* Header row */}
+          <div className="flex justify-between items-center">
+            <div className="h-4 w-32 bg-gray-200 rounded" />
+            <div className="grid grid-cols-5 gap-4">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="h-4 w-6 bg-gray-200 rounded" />
+              ))}
+            </div>
+          </div>
+
+          <Separator className="bg-gray-300" />
+
+          {/* Step rows */}
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="space-y-3">
+              <div className="flex items-start justify-between gap-4">
+                <div className="h-4 w-3/4 bg-gray-200 rounded" />
+                <div className="grid grid-cols-5 gap-4">
+                  {[...Array(5)].map((_, j) => (
+                    <div key={j} className="h-4 w-4 bg-gray-200 rounded-full" />
+                  ))}
+                </div>
+              </div>
+              <Separator className="bg-gray-300" />
+            </div>
+          ))}
+        </div>
       </div>
     );
+  }
+
+  if (!procedure || !student) {
+    toast.error(
+      "You are not authorized to view this procedure. Procedure has been scored by both examiners. Awaiting reconciliation.",
+    );
+    router.push(`/programs/${programId}/students/${studentId}/procedures`);
+    return;
   }
 
   // Check if current user has completed all steps
@@ -196,11 +195,15 @@ export default function ProcedureStepsPage() {
         <Alert className="mb-4 border-green-500 bg-green-50">
           <CheckCircle2 className="h-4 w-4 text-green-600" />
           <AlertDescription className="text-green-800">
-            You have completed scoring all steps for this procedure.
+            You have completed scoring all steps for this procedure. Both examiners have completed scoring.
             {completionStatus?.status === "scored" && (
               <span className="block mt-1 font-semibold">
-                Both examiners have completed scoring. Reconciliation is now
-                available.
+                <Link
+                  className="underline"
+                  href={`/programs/${programId}/students/${studentId}/procedures/${procedure.id}/reconcile`}
+                >
+                  Reconciliation is now available.
+                </Link>
               </span>
             )}
           </AlertDescription>

@@ -1,3 +1,5 @@
+// ===========================WITH RECONCILIATION LIMIT================================
+
 // "use client";
 
 // import { useEffect, useState, useMemo } from "react";
@@ -344,6 +346,288 @@
 //   );
 // }
 
+// ===========================WITH RECONCILIATION LIMIT END================================
+
+// "use client";
+
+// import { useEffect, useState, useMemo } from "react";
+// import { useParams, useRouter } from "next/navigation";
+// import { api } from "@/lib/api";
+// import { Badge } from "@/components/ui/badge";
+// import { Button } from "@/components/ui/button";
+// import { Input } from "@/components/ui/input";
+// import { Separator } from "@/components/ui/separator";
+// import { User, ArrowLeft, RefreshCcw, Search, X, Lock } from "lucide-react";
+// import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+// import { Skeleton } from "@/components/ui/skeleton";
+// import { toast } from "sonner";
+
+// export default function ProceduresPage() {
+//   const { programId, studentId } = useParams();
+//   const router = useRouter();
+//   const [procedures, setProcedures] = useState([]);
+//   const [student, setStudent] = useState(null);
+//   const [loading, setLoading] = useState(true);
+//   const [searchQuery, setSearchQuery] = useState("");
+
+//   useEffect(() => {
+//     if (!programId || !studentId) return;
+
+//     // Fetch student details
+//     const fetchStudent = api.get(`/exams/students/${studentId}/`);
+
+//     // Fetch procedures
+//     const fetchProcedures = api.get(
+//       `/exams/programs/${programId}/procedures/`,
+//       {
+//         params: { student_id: studentId },
+//       },
+//     );
+
+//     Promise.all([fetchStudent, fetchProcedures])
+//       .then(([studentRes, proceduresRes]) => {
+//         setStudent(studentRes.data);
+//         setProcedures(proceduresRes.data);
+//         setLoading(false);
+//       })
+//       .catch((err) => {
+//         console.error(err);
+//         setLoading(false);
+//       });
+//   }, [programId, studentId]);
+
+//   // Count reconciled procedures
+//   const reconciledCount = useMemo(() => {
+//     return procedures.filter((proc) => proc.status === "reconciled").length;
+//   }, [procedures]);
+
+//   const getStatusConfig = (status) => {
+//     const configs = {
+//       pending: {
+//         label: "Pending",
+//         className: "bg-yellow-500 normal-case hover:bg-yellow-600 text-white",
+//       },
+//       scored: {
+//         label: "Ready to Reconcile",
+//         className: "bg-blue-500 normal-case hover:bg-blue-600 text-white",
+//       },
+//       reconciled: {
+//         label: "Reconciled",
+//         className: "bg-green-500 normal-case hover:bg-green-600 text-white",
+//       },
+//     };
+//     return configs[status] || configs.pending;
+//   };
+
+//   const handleProcedureClick = (proc) => {
+//     // Check if reconciled
+//     if (proc.status === "reconciled") {
+//       toast.info("This procedure has already been reconciled.");
+//       return;
+//     }
+
+//     router.push(
+//       `/programs/${programId}/students/${studentId}/procedures/${proc.id}`,
+//     );
+//   };
+
+//   const clearSearch = () => {
+//     setSearchQuery("");
+//   };
+
+//   // Filter and sort procedures
+//   const filteredProcedures = useMemo(() => {
+//     // First filter based on search query
+//     const filtered = procedures.filter((proc) => {
+//       if (!searchQuery.trim()) return true;
+
+//       const query = searchQuery.toLowerCase();
+//       return (
+//         proc.name.toLowerCase().includes(query) ||
+//         proc.status.toLowerCase().includes(query)
+//       );
+//     });
+
+//     // Then sort by status priority: scored (ready to reconcile) first, then reconciled, then pending
+//     const statusPriority = {
+//       scored: 1,
+//       reconciled: 2,
+//       pending: 3,
+//     };
+
+//     return filtered.sort((a, b) => {
+//       const priorityA = statusPriority[a.status] || 999;
+//       const priorityB = statusPriority[b.status] || 999;
+//       return priorityA - priorityB;
+//     });
+//   }, [procedures, searchQuery]);
+
+//   if (loading) {
+//     return (
+//       <div className="p-4 max-w-3xl mx-auto">
+//         {/* Skeleton loaders */}
+//         {Array.from({ length: 6 }).map((_, i) => (
+//           <Card key={i} className="mb-4">
+//             <CardHeader className="space-y-3">
+//               <Skeleton className="h-6 w-6 rounded-full" />
+//               <Skeleton className="h-4 w-3/4" />
+//               <Skeleton className="h-3 w-1/2" />
+//             </CardHeader>
+//           </Card>
+//         ))}
+//       </div>
+//     );
+//   }
+
+//   return (
+//     <div className="p-4 max-w-3xl mx-auto">
+//       {/* Student Info Header */}
+//       {student && (
+//         <div className="mb-6 p-4 bg-gray-50 rounded-lg border">
+//           <div className="flex items-center gap-3">
+//             <div className="p-2 bg-primary/10 rounded-full">
+//               <User className="h-6 w-6 text-primary" />
+//             </div>
+//             <div>
+//               <h2 className="text-lg font-bold">{student.full_name}</h2>
+//               <p className="text-sm text-muted-foreground">
+//                 Index Number: {student.index_number}
+//               </p>
+//               {student.program && (
+//                 <p className="text-sm text-muted-foreground">
+//                   Program: {student.program.name}
+//                 </p>
+//               )}
+
+//               <p className="text-sm text-muted-foreground">
+//                 {reconciledCount} out of {procedures.length} procedures reconciled
+//               </p>
+//             </div>
+//           </div>
+//         </div>
+//       )}
+
+//       <div className="flex items-center gap-4 mb-4">
+//         <Button
+//           variant="ghost"
+//           size="sm"
+//           onClick={() =>
+//             router.push(`/programs/${programId}/students/${studentId}`)
+//           }
+//         >
+//           <ArrowLeft className="h-4 w-4 mr-2" />
+//           Back
+//         </Button>
+
+//         <h1 className="text-2xl uppercase font-bold">Select Procedure</h1>
+//       </div>
+
+//       <Separator className="mb-4" />
+
+//       {/* Search Bar */}
+//       <div className="mb-6 sticky top-16 bg-white pt-4 pb-2 z-10">
+//         <div className="relative">
+//           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+//           <Input
+//             type="text"
+//             placeholder="Search procedures by name or status..."
+//             value={searchQuery}
+//             onChange={(e) => setSearchQuery(e.target.value)}
+//             className="pl-9 pr-9"
+//           />
+//           {searchQuery && (
+//             <button
+//               onClick={clearSearch}
+//               className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+//             >
+//               <X className="h-4 w-4" />
+//             </button>
+//           )}
+//         </div>
+
+//         {/* Search Results Counter */}
+//         {searchQuery && (
+//           <p className="text-sm text-muted-foreground mt-2">
+//             Found {filteredProcedures.length} of {procedures.length} procedure
+//             {procedures.length !== 1 ? "s" : ""}
+//           </p>
+//         )}
+//       </div>
+
+//       {/* Procedures List */}
+//       <div className="space-y-3">
+//         {filteredProcedures.length === 0 ? (
+//           <Card className="p-8">
+//             <div className="text-center text-muted-foreground">
+//               {searchQuery ? (
+//                 <>
+//                   <p className="mb-2">
+//                     No procedures found matching "{searchQuery}"
+//                   </p>
+//                   <Button variant="link" onClick={clearSearch}>
+//                     Clear search
+//                   </Button>
+//                 </>
+//               ) : (
+//                 <p>No procedures available</p>
+//               )}
+//             </div>
+//           </Card>
+//         ) : (
+//           filteredProcedures.map((proc) => {
+//             const statusConfig = getStatusConfig(proc.status);
+
+//             return (
+//               <Card
+//                 key={proc.id}
+//                 className="transition cursor-pointer hover:shadow-md hover:border-primary"
+//               >
+//                 <CardHeader className="space-y-3">
+//                   <div className="flex items-center justify-between">
+//                     <div className="flex items-center gap-2">
+//                       <Badge
+//                         variant="secondary"
+//                         className={statusConfig.className}
+//                       >
+//                         {statusConfig.label}
+//                         {proc.status === "reconciled" && (
+//                           <Lock className="h-3 w-3 ml-1" />
+//                         )}
+//                       </Badge>
+//                     </div>
+
+//                     {proc.status === "scored" && (
+//                       <Button
+//                         size="sm"
+//                         onClick={(e) => {
+//                           e.stopPropagation();
+//                           router.push(
+//                             `/programs/${programId}/students/${studentId}/procedures/${proc.id}/reconcile`,
+//                           );
+//                         }}
+//                         className="bg-blue-600 hover:bg-blue-700"
+//                       >
+//                         Reconcile <RefreshCcw className="h-4 w-4 ml-2" />
+//                       </Button>
+//                     )}
+//                   </div>
+
+//                   <CardTitle
+//                     onClick={() => handleProcedureClick(proc)}
+//                     className="text-lg uppercase cursor-pointer underline"
+//                   >
+//                     {proc.name}
+//                   </CardTitle>
+//                 </CardHeader>
+//               </Card>
+//             );
+//           })
+//         )}
+//       </div>
+//     </div>
+//   );
+// }
+
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
@@ -397,33 +681,59 @@ export default function ProceduresPage() {
     return procedures.filter((proc) => proc.status === "reconciled").length;
   }, [procedures]);
 
-  const getStatusConfig = (status) => {
+  const getStatusConfig = (displayStatus) => {
     const configs = {
       pending: {
         label: "Pending",
         className: "bg-yellow-500 normal-case hover:bg-yellow-600 text-white",
       },
-      scored: {
+      ready_to_reconcile: {
         label: "Ready to Reconcile",
         className: "bg-blue-500 normal-case hover:bg-blue-600 text-white",
+      },
+      scored: {
+        label: "Scored",
+        className: "bg-purple-500 normal-case hover:bg-purple-600 text-white",
       },
       reconciled: {
         label: "Reconciled",
         className: "bg-green-500 normal-case hover:bg-green-600 text-white",
       },
     };
-    return configs[status] || configs.pending;
+    return configs[displayStatus] || configs.pending;
   };
 
   const handleProcedureClick = (proc) => {
     // Check if reconciled
-    if (proc.status === "reconciled") {
+    if (proc.display_status === "reconciled") {
       toast.info("This procedure has already been reconciled.");
       return;
     }
 
+    // Check if scored but user cannot access
+    if (proc.display_status === "scored") {
+      toast.warning(
+        "This procedure has been scored. Only assigned examiners can view it.",
+      );
+      return;
+    }
+
+
     router.push(
       `/programs/${programId}/students/${studentId}/procedures/${proc.id}`,
+    );
+  };
+
+  const handleReconcileClick = (proc) => {
+    if (!proc.can_reconcile) {
+      toast.error(
+        "You are not authorized to reconcile this procedure. Only the last examiner to complete scoring can reconcile.",
+      );
+      return;
+    }
+
+    router.push(
+      `/programs/${programId}/students/${studentId}/procedures/${proc.id}/reconcile`,
     );
   };
 
@@ -431,16 +741,33 @@ export default function ProceduresPage() {
     setSearchQuery("");
   };
 
-  // Filter procedures based on search query
-  const filteredProcedures = procedures.filter((proc) => {
-    if (!searchQuery.trim()) return true;
+  // Filter and sort procedures
+  const filteredProcedures = useMemo(() => {
+    // First filter based on search query
+    const filtered = procedures.filter((proc) => {
+      if (!searchQuery.trim()) return true;
 
-    const query = searchQuery.toLowerCase();
-    return (
-      proc.name.toLowerCase().includes(query) ||
-      proc.status.toLowerCase().includes(query)
-    );
-  });
+      const query = searchQuery.toLowerCase();
+      return (
+        proc.name.toLowerCase().includes(query) ||
+        proc.status.toLowerCase().includes(query)
+      );
+    });
+
+    // Then sort by status priority: ready_to_reconcile first, then reconciled, then scored, then pending
+    const statusPriority = {
+      ready_to_reconcile: 1,
+      reconciled: 2,
+      scored: 3,
+      pending: 4,
+    };
+
+    return filtered.sort((a, b) => {
+      const priorityA = statusPriority[a.display_status] || 999;
+      const priorityB = statusPriority[b.display_status] || 999;
+      return priorityA - priorityB;
+    });
+  }, [procedures, searchQuery]);
 
   if (loading) {
     return (
@@ -480,7 +807,8 @@ export default function ProceduresPage() {
               )}
 
               <p className="text-sm text-muted-foreground">
-                {reconciledCount} out of {procedures.length} procedures reconciled
+                {reconciledCount} out of {procedures.length} procedures
+                reconciled
               </p>
             </div>
           </div>
@@ -555,12 +883,19 @@ export default function ProceduresPage() {
           </Card>
         ) : (
           filteredProcedures.map((proc) => {
-            const statusConfig = getStatusConfig(proc.status);
+            const statusConfig = getStatusConfig(proc.display_status);
+            const isClickable =
+              proc.display_status !== "scored" &&
+              proc.display_status !== "reconciled";
 
             return (
               <Card
                 key={proc.id}
-                className="transition cursor-pointer hover:shadow-md hover:border-primary"
+                className={`transition ${
+                  isClickable
+                    ? "cursor-pointer hover:shadow-md hover:border-primary"
+                    : "opacity-75"
+                }`}
               >
                 <CardHeader className="space-y-3">
                   <div className="flex items-center justify-between">
@@ -570,31 +905,36 @@ export default function ProceduresPage() {
                         className={statusConfig.className}
                       >
                         {statusConfig.label}
-                        {proc.status === "reconciled" && (
+                        {(proc.display_status === "reconciled" ||
+                          proc.display_status === "scored") && (
                           <Lock className="h-3 w-3 ml-1" />
                         )}
                       </Badge>
                     </div>
 
-                    {proc.status === "scored" && (
-                      <Button
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          router.push(
-                            `/programs/${programId}/students/${studentId}/procedures/${proc.id}/reconcile`,
-                          );
-                        }}
-                        className="bg-blue-600 hover:bg-blue-700"
-                      >
-                        Reconcile <RefreshCcw className="h-4 w-4 ml-2" />
-                      </Button>
-                    )}
+                    {/* Only show reconcile button if user has permission */}
+                    {proc.display_status === "ready_to_reconcile" &&
+                      proc.can_reconcile && (
+                        <Button
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleReconcileClick(proc);
+                          }}
+                          className="bg-blue-600 hover:bg-blue-700"
+                        >
+                          Reconcile <RefreshCcw className="h-4 w-4 ml-2" />
+                        </Button>
+                      )}
                   </div>
 
                   <CardTitle
                     onClick={() => handleProcedureClick(proc)}
-                    className="text-lg uppercase cursor-pointer underline"
+                    className={`text-lg uppercase ${
+                      isClickable
+                        ? "cursor-pointer underline"
+                        : "cursor-not-allowed text-gray-500"
+                    }`}
                   >
                     {proc.name}
                   </CardTitle>
