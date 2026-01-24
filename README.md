@@ -9,4 +9,15 @@ The main aim of this app is to make practicals assesment at Nursing Training Col
 - Shadcn - UI utility
 - Django - Backend
 
-### This repo will go private soon 😉
+#### [Demo App](https://nursingpractical.vercel.app/)
+#### Administrator Credentials 
+- *username:* administrator
+- *password:* admin@123
+
+#### Examiner Credentials 
+- *username:* yp
+- *password:* yp@1234
+
+*This is a `Dual Examiner` form of assessment*
+
+### Note: This repo will go private very soon 😉
