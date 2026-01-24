@@ -15,8 +15,13 @@ The main aim of this app is to make practicals assesment at Nursing Training Col
 - *password:* admin@123
 
 #### Examiner Credentials 
+**Examiner 1**
 - *username:* yp
 - *password:* yp@1234
+
+**Examiner 2**
+- *username:* cypha
+- *password:* cypha@1234
 
 *This is a `Dual Examiner` form of assessment*
 
