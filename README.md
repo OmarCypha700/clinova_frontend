@@ -8,3 +8,5 @@ The main aim of this app is to make practicals assesment at Nursing Training Col
 - Lucid React - Icons
 - Shadcn - UI utility
 - Django - Backend
+
+### This repo will go private soon 😉
