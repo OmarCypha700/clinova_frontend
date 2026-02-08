@@ -71,7 +71,7 @@ export default function StudentsPage() {
     index_number: "",
     full_name: "",
     program_id: "",
-    level: "100",
+    level: "",
     is_active: true,
   });
   const [submitting, setSubmitting] = useState(false);
@@ -110,7 +110,7 @@ export default function StudentsPage() {
       if (editingStudent) {
         await api.patch(
           `/exams/admin/students/${editingStudent.id}/`,
-          formData
+          formData,
         );
         toast.success("Student updated successfully");
       } else {
@@ -158,7 +158,7 @@ export default function StudentsPage() {
         student_ids: selectedStudents,
       });
       toast.success(
-        `Successfully deleted ${selectedStudents.length} student(s)`
+        `Successfully deleted ${selectedStudents.length} student(s)`,
       );
       setBulkDeleteDialog(false);
       setSelectedStudents([]);
@@ -176,13 +176,13 @@ export default function StudentsPage() {
         prevStudents.map((student) =>
           student.id === id
             ? { ...student, is_active: !student.is_active }
-            : student
-        )
+            : student,
+        ),
       );
 
       await api.post(`/exams/admin/students/${id}/toggle_active/`);
       toast.success(
-        `Student ${!currentStatus ? "activated" : "deactivated"} successfully`
+        `Student ${!currentStatus ? "activated" : "deactivated"} successfully`,
       );
 
       // Fetch fresh data to ensure consistency
@@ -192,8 +192,10 @@ export default function StudentsPage() {
       // Revert the optimistic update on error
       setStudents((prevStudents) =>
         prevStudents.map((student) =>
-          student.id === id ? { ...student, is_active: currentStatus } : student
-        )
+          student.id === id
+            ? { ...student, is_active: currentStatus }
+            : student,
+        ),
       );
       toast.error("Failed to update status");
     }
@@ -229,7 +231,7 @@ export default function StudentsPage() {
       link.remove();
 
       toast.success(
-        `Students exported successfully as ${exportFormat.toUpperCase()}`
+        `Students exported successfully as ${exportFormat.toUpperCase()}`,
       );
     } catch (err) {
       console.error(err);
@@ -300,7 +302,7 @@ export default function StudentsPage() {
 
       if (response.data.errors === 0) {
         toast.success(
-          `Import successful! Created: ${response.data.created}, Updated: ${response.data.updated}`
+          `Import successful! Created: ${response.data.created}, Updated: ${response.data.updated}`,
         );
         setTimeout(() => {
           setImportDialog(false);
@@ -362,9 +364,7 @@ export default function StudentsPage() {
   const someSelected = selectedStudents.length > 0 && !allSelected;
 
   if (loading) {
-    return <DashboardSkeleton
-      showStats={false}
-    />;
+    return <DashboardSkeleton showStats={false} />;
   }
 
   return (
@@ -429,7 +429,7 @@ export default function StudentsPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex items-center gap-2 flex-wrap">
+      <div className="flex flex-col md:flex-row gap-2">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
@@ -439,34 +439,35 @@ export default function StudentsPage() {
             className="pl-8"
           />
         </div>
-        <Select value={filterProgram} onValueChange={setFilterProgram}>
-          <SelectTrigger className="w-48">
-            <SelectValue placeholder="Filter by program" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Programs</SelectItem>
-            {programs.map((program) => (
-              <SelectItem key={program.id} value={program.id.toString()}>
-                {program.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex flex-col md:flex-row gap-2 max-w-sm">
+          <Select value={filterProgram} onValueChange={setFilterProgram}>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="Filter by program" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Programs</SelectItem>
+              {programs.map((program) => (
+                <SelectItem key={program.id} value={program.id.toString()}>
+                  {program.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-        <Select value={filterLevel} onValueChange={setFilterLevel}>
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="Filter by level" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Levels</SelectItem>
-            <SelectItem value="100">Level 100</SelectItem>
-            <SelectItem value="200">Level 200</SelectItem>
-            <SelectItem value="300">Level 300</SelectItem>
-            <SelectItem value="400">Level 400</SelectItem>
-          </SelectContent>
-        </Select>
+          <Select value={filterLevel} onValueChange={setFilterLevel}>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="Filter by level" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Levels</SelectItem>
+              <SelectItem value="100">Level 100</SelectItem>
+              <SelectItem value="200">Level 200</SelectItem>
+              <SelectItem value="300">Level 300</SelectItem>
+              <SelectItem value="400">Level 400</SelectItem>
+            </SelectContent>
+          </Select>
 
-        {selectedStudents.length > 0 && (
+          {selectedStudents.length > 0 && (
           <Button
             variant="destructive"
             onClick={() => setBulkDeleteDialog(true)}
@@ -475,6 +476,9 @@ export default function StudentsPage() {
             Delete Selected ({selectedStudents.length})
           </Button>
         )}
+        </div>
+
+        
       </div>
 
       {/* Table */}
@@ -533,12 +537,9 @@ export default function StudentsPage() {
                     </TableCell>
                     <TableCell>{student.full_name}</TableCell>
                     <TableCell>{student.program.name}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline">L{student.level}</Badge>
-                    </TableCell>
+                    <TableCell>L{student.level}</TableCell>
                     <TableCell>
                       <Badge
-                        // variant={student.is_active ? "default" : "secondary"}
                         className={
                           student.is_active
                             ? "bg-green-600 hover:bg-green-700"
@@ -688,8 +689,8 @@ export default function StudentsPage() {
                 {submitting
                   ? "Saving..."
                   : editingStudent
-                  ? "Update Student"
-                  : "Create Student"}
+                    ? "Update Student"
+                    : "Create Student"}
               </Button>
             </DialogFooter>
           </form>
