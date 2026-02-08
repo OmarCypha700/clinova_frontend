@@ -7,6 +7,7 @@ import DashboardSkeleton from "@/components/DashboardSkeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -62,6 +63,8 @@ export default function ProceduresPage() {
   const [filterProgram, setFilterProgram] = useState("all");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingProcedure, setEditingProcedure] = useState(null);
+  const [selectedProcedures, setSelectedProcedures] = useState([]);
+  const [bulkDeleteDialog, setBulkDeleteDialog] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState({ open: false, id: null });
   const [formData, setFormData] = useState({
     name: "",
@@ -256,6 +259,23 @@ export default function ProceduresPage() {
     }
   };
 
+    const handleBulkDelete = async () => {
+    try {
+      await api.post("/exams/procedures/bulk-delete/", {
+        procedure_ids: selectedProcedures,
+      });
+      toast.success(
+        `Successfully deleted ${selectedProcedures.length} procedure(s)`,
+      );
+      setBulkDeleteDialog(false);
+      setSelectedProcedures([]);
+      fetchData();
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.error || "Failed to delete procedures");
+    }
+  };
+
   const resetForm = () => {
     setFormData({
       name: "",
@@ -263,6 +283,24 @@ export default function ProceduresPage() {
       total_score: "",
     });
     setEditingProcedure(null);
+  };
+
+  const handleSelectAll = (checked) => {
+    if (checked) {
+      setSelectedProcedures(filteredProcedures.map((p) => p.id));
+    } else {
+      setSelectedProcedures([]);
+    }
+  };
+
+  const handleSelectProcedure = (procedureId, checked) => {
+    if (checked) {
+      setSelectedProcedures([...selectedProcedures, procedureId]);
+    } else {
+      setSelectedProcedures(
+        selectedProcedures.filter((id) => id !== procedureId),
+      );
+    }
   };
 
   const filteredProcedures = procedures.filter((procedure) => {
@@ -274,6 +312,11 @@ export default function ProceduresPage() {
       procedure.program_id === parseInt(filterProgram);
     return matchesSearch && matchesProgram;
   });
+
+  const allSelected =
+    filteredProcedures.length > 0 &&
+    selectedProcedures.length === filteredProcedures.length;
+  const someSelected = selectedProcedures.length > 0 && !allSelected;
 
   if (loading) {
     return <DashboardSkeleton showStats={false} />;
@@ -352,7 +395,7 @@ export default function ProceduresPage() {
             className="pl-8"
           />
         </div>
-        <div className="w-full md:w-64">
+        <div className="flex flex-col md:flex-row gap-2 max-w-sm">
           <Select value={filterProgram} onValueChange={setFilterProgram}>
             <SelectTrigger className="w-64">
               <SelectValue placeholder="Filter by program" />
@@ -366,78 +409,42 @@ export default function ProceduresPage() {
               ))}
             </SelectContent>
           </Select>
+
+           {selectedProcedures.length > 0 && (
+          <Button
+            variant="destructive"
+            onClick={() => setBulkDeleteDialog(true)}
+          >
+            <Trash2 className="mr-2 h-4 w-4" />
+            Delete Selected ({selectedProcedures.length})
+          </Button>
+        )}
         </div>
       </div>
 
       {/* Table */}
       <Card>
         <CardHeader>
-          <CardTitle>All Procedures ({filteredProcedures.length})</CardTitle>
+          <CardTitle>All Procedures ({filteredProcedures.length})
+            {selectedProcedures.length > 0 && (
+              <span className="ml-2 text-sm font-normal text-muted-foreground">
+                • {selectedProcedures.length} selected
+              </span>
+            )}
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          {/* <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Procedure Name</TableHead>
-                <TableHead>Program</TableHead>
-                <TableHead>Total Score</TableHead>
-                <TableHead>Steps</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredProcedures.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center py-6">
-                    No procedures found
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredProcedures.map((procedure) => (
-                  <TableRow key={procedure.id}>
-                    <TableCell className="font-medium">
-                      {procedure.name}
-                    </TableCell>
-                    <TableCell>{procedure.program}</TableCell>
-                    <TableCell>{procedure.total_score}</TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">
-                        {procedure.step_count || 0} steps
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Link href={`/admin/procedures/${procedure.id}/steps`}>
-                          <Button variant="ghost" size="sm">
-                            <ListOrdered className="h-4 w-4" />
-                          </Button>
-                        </Link>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEdit(procedure)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() =>
-                            setDeleteDialog({ open: true, id: procedure.id })
-                          }
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table> */}
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-12">
+                  <Checkbox
+                    checked={allSelected}
+                    onCheckedChange={handleSelectAll}
+                    aria-label="Select all"
+                    className={someSelected ? "opacity-50" : ""}
+                  />
+                </TableHead>
                 <TableHead className="min-w-[12rem] max-w-xs truncate lg:truncate">
                   Procedure Name
                 </TableHead>
@@ -457,6 +464,15 @@ export default function ProceduresPage() {
               ) : (
                 filteredProcedures.map((procedure) => (
                   <TableRow key={procedure.id}>
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedProcedures.includes(procedure.id)}
+                        onCheckedChange={(checked) =>
+                          handleSelectProcedure(procedure.id, checked)
+                        }
+                        aria-label={`Select ${procedure.name}`}
+                      />
+                    </TableCell>
                     <TableCell
                       className="uppercase font-medium min-w-[12rem] max-w-xs truncate lg:truncate cursor-pointer"
                       title={procedure.name}
@@ -679,6 +695,28 @@ export default function ProceduresPage() {
               className="bg-destructive"
             >
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk Delete Dialog */}
+      <AlertDialog open={bulkDeleteDialog} onOpenChange={setBulkDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Multiple Procedures?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You are about to delete {selectedProcedures.length} procedure(s) and all its steps. This
+              action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkDelete}
+              className="bg-destructive"
+            >
+              Delete {selectedProcedures.length} Procedure(s)
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
