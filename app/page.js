@@ -146,10 +146,20 @@ export default function LoginPage() {
             height={90}
             priority
           />
-          <div className="ml-3">
+
+          <div className="ml-3 mr-3">
             <p className="font-bold text-2xl text-center">NURSING</p>
             <p className="text-center">PRACTICALS APP</p>
           </div>
+
+          <Image
+            src="/tanoso_logo.webp"
+            fetchPriority="high"
+            alt="Tanoso Logo"
+            width={90}
+            height={90}
+            priority
+          />
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 w-full max-w-sm">
