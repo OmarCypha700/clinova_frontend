@@ -251,7 +251,7 @@ export default function CarePlanPage() {
                 </p>
               </div>
 
-              <div className="space-y-2">
+              {/* <div className="space-y-2">
                 <Label htmlFor="comments">Comments (Optional)</Label>
                 <Textarea
                   id="comments"
@@ -261,7 +261,7 @@ export default function CarePlanPage() {
                   rows={5}
                   disabled={submitting}
                 />
-              </div>
+              </div> */}
 
               <Alert className="bg-yellow-50 border-yellow-200">
                 <Lock className="h-4 w-4" />

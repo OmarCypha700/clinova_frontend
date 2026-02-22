@@ -89,7 +89,7 @@ export default function AssessmentOptionsPage() {
 
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={() => router.push(`/programs/${programId}`)}>
-          <ArrowLeft className="h-5 w-5" />
+          <ArrowLeft className="h-5 w-5" /> Back
         </Button>
         <div>
           <h1 className="text-2xl uppercase font-bold">Assessment Options</h1>

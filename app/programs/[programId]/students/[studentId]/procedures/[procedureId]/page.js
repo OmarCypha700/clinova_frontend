@@ -49,7 +49,7 @@ export default function ProcedureStepsPage() {
         setLoading(false);
       })
       .catch((err) => {
-        console.error(err);
+        // console.error(err);
         setLoading(false);
       });
   }, [programId, procedureId, studentId]);
@@ -78,10 +78,11 @@ export default function ProcedureStepsPage() {
         examinerBComplete: response.data.examiner_b_complete,
       });
     } catch (err) {
-      // console.error("Autosave failed", err);
       toast.error(
         "Reconciliation in progress. Scores will not be saved.",
       );
+      router.push(`/programs/${programId}/students/${studentId}/procedures`);
+    return;
     } finally {
       setSavingStep(null);
     }
@@ -195,7 +196,7 @@ export default function ProcedureStepsPage() {
         <Alert className="mb-4 border-green-500 bg-green-50">
           <CheckCircle2 className="h-4 w-4 text-green-600" />
           <AlertDescription className="text-green-800">
-            You have completed scoring all steps for this procedure. Both examiners have completed scoring.
+            You have completed scoring all steps for this procedure.
             {completionStatus?.status === "scored" && (
               <span className="block mt-1 font-semibold">
                 <Link
