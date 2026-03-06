@@ -50,6 +50,7 @@ import { toast } from "sonner";
 
 export default function GradesPage() {
   const [grades, setGrades] = useState([]);
+  // const [filterGrade, setFilterGrade] = useState("all");
   const [programs, setPrograms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -58,14 +59,51 @@ export default function GradesPage() {
   const [sortBy, setSortBy] = useState("index_number");
   const [sortOrder, setSortOrder] = useState("asc");
   const [exporting, setExporting] = useState(false);
+  const [debouncedSearch, setDebouncedSearch] = useState(searchQuery);
+  const [initialLoad, setInitialLoad] = useState(true);
+  const today = new Date().toISOString().split("T")[0];
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   useEffect(() => {
     fetchPrograms();
   }, []);
 
-  useEffect(() => {
-    fetchGrades();
-  }, [filterProgram, filterLevel, searchQuery, sortBy, sortOrder]);
+useEffect(() => {
+  fetchGrades();
+}, [
+  filterProgram,
+  filterLevel,
+  // filterGrade,
+  debouncedSearch,
+  sortBy,
+  sortOrder,
+]);
+
+useEffect(() => {
+  setInitialLoad(false);
+}, []);
+
+// const gradesList = useMemo(() => {
+//   const gradeOrder = ["Distinction", "Credit", "Pass", "Fail"];
+
+//   const uniqueGrades = new Set(
+//     grades.map((g) => g.grade).filter(Boolean)
+//   );
+
+//   return gradeOrder
+//     .filter((grade) => uniqueGrades.has(grade))
+//     .map((grade) => ({
+//       value: grade,
+//       label: grade,
+//     }));
+// }, [grades]);
 
   const fetchPrograms = async () => {
     try {
@@ -85,6 +123,12 @@ export default function GradesPage() {
         order: sortOrder,
       };
 
+      // console.log("Filter params:", params);
+
+      // if (filterGrade !== "all") {
+      //   params.grade = filterGrade;
+      // }
+
       if (filterProgram !== "all") {
         params.program_id = filterProgram;
       }
@@ -93,12 +137,13 @@ export default function GradesPage() {
         params.level = filterLevel;
       }
 
-      if (searchQuery) {
-        params.search = searchQuery;
+      if (debouncedSearch) {
+        params.search = debouncedSearch;
       }
 
       const res = await api.get("/exams/grades/", { params });
       setGrades(res.data);
+      // console.log("Fetched grades:", res.data);
       setLoading(false);
     } catch (err) {
       console.error(err);
@@ -126,6 +171,10 @@ export default function GradesPage() {
         export: format,
       };
 
+      // if (filterGrade !== "all") {
+      //   params.grade = filterGrade;
+      // }
+
       if (filterProgram !== "all") {
         params.program_id = filterProgram;
       }
@@ -134,8 +183,8 @@ export default function GradesPage() {
         params.level = filterLevel;
       }
 
-      if (searchQuery) {
-        params.search = searchQuery;
+      if (debouncedSearch) {
+        params.search = debouncedSearch;
       }
 
       const response = await api.get("/exams/grades/", {
@@ -148,7 +197,7 @@ export default function GradesPage() {
       link.href = url;
 
       const extension = format === "excel" ? "xlsx" : format;
-      link.setAttribute("download", `student_grades.${extension}`);
+      link.setAttribute("download", `student_grades_${today}.${extension}`);
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -182,19 +231,22 @@ export default function GradesPage() {
   };
 
   // Calculate statistics
-  const stats = {
-    total: grades.length,
-    completed: grades.filter((g) => g.grade !== "N/A").length,
-    averagePercentage:
-      grades.length > 0
-        ? (
-            grades.reduce((sum, g) => sum + g.percentage, 0) / grades.length
-          ).toFixed(2)
-        : 0,
-    carePlansCompleted: grades.filter((g) => g.care_plan_completed).length,
-  };
+  const stats = useMemo(
+    () => ({
+      total: grades.length,
+      completed: grades.filter((g) => g.grade !== "N/A").length,
+      averagePercentage:
+        grades.length > 0
+          ? (
+              grades.reduce((sum, g) => sum + g.percentage, 0) / grades.length
+            ).toFixed(2)
+          : 0,
+      carePlansCompleted: grades.filter((g) => g.care_plan_completed).length,
+    }),
+    [grades],
+  );
 
-  if (loading && grades.length === 0) {
+  if (initialLoad) {
     return <DashboardSkeleton statsCount={4} />;
   }
 
@@ -303,32 +355,46 @@ export default function GradesPage() {
           />
         </div>
         <div className="flex flex-col md:flex-row gap-2 max-w-sm">
-        <Select value={filterProgram} onValueChange={setFilterProgram}>
-          <SelectTrigger className="w-64">
-            <SelectValue placeholder="Filter by program" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Programs</SelectItem>
-            {programs.map((program) => (
-              <SelectItem key={program.id} value={program.id.toString()}>
-                {program.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          <Select value={filterProgram} onValueChange={setFilterProgram}>
+            <SelectTrigger className="w-64">
+              <SelectValue placeholder="Filter by program" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Programs</SelectItem>
+              {programs.map((program) => (
+                <SelectItem key={program.id} value={program.id.toString()}>
+                  {program.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-        <Select value={filterLevel} onValueChange={setFilterLevel}>
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="Filter by level" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Levels</SelectItem>
-            <SelectItem value="100">Level 100</SelectItem>
-            <SelectItem value="200">Level 200</SelectItem>
-            <SelectItem value="300">Level 300</SelectItem>
-            <SelectItem value="400">Level 400</SelectItem>
-          </SelectContent>
-        </Select>
+          <Select value={filterLevel} onValueChange={setFilterLevel}>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="Filter by level" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Levels</SelectItem>
+              <SelectItem value="100">Level 100</SelectItem>
+              <SelectItem value="200">Level 200</SelectItem>
+              <SelectItem value="300">Level 300</SelectItem>
+              <SelectItem value="400">Level 400</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* <Select value={filterGrade} onValueChange={setFilterGrade}>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="Filter by grade" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Grades</SelectItem>
+              {gradesList.map((grade) => (
+                <SelectItem key={grade.value} value={grade.value.toString()}>
+                  {grade.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select> */}
         </div>
       </div>
 
@@ -455,15 +521,18 @@ export default function GradesPage() {
                       </TableCell>
                       <TableCell className="text-center">
                         <Badge variant="outline">
-                          {student.percentage.toFixed(1)}%
+                          {student.percentage
+                            ? student.percentage.toFixed(1)
+                            : 0}
+                          %
                         </Badge>
                       </TableCell>
                       <TableCell className="text-center">
                         <Badge
                           className={`${getGradeBadgeColor(
-                            student.grade
+                            student.grade,
                           )} text-white hover:${getGradeBadgeColor(
-                            student.grade
+                            student.grade,
                           )}`}
                         >
                           {student.grade}
