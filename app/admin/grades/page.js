@@ -76,35 +76,35 @@ export default function GradesPage() {
     fetchPrograms();
   }, []);
 
-  useEffect(() => {
-    fetchGrades();
-  }, [
-    filterProgram,
-    filterLevel,
-    // filterGrade,
-    debouncedSearch,
-    sortBy,
-    sortOrder,
-  ]);
+useEffect(() => {
+  fetchGrades();
+}, [
+  filterProgram,
+  filterLevel,
+  // filterGrade,
+  debouncedSearch,
+  sortBy,
+  sortOrder,
+]);
 
-  useEffect(() => {
-    setInitialLoad(false);
-  }, []);
+useEffect(() => {
+  setInitialLoad(false);
+}, []);
 
-  // const gradesList = useMemo(() => {
-  //   const gradeOrder = ["Distinction", "Credit", "Pass", "Fail"];
+// const gradesList = useMemo(() => {
+//   const gradeOrder = ["Distinction", "Credit", "Pass", "Fail"];
 
-  //   const uniqueGrades = new Set(
-  //     grades.map((g) => g.grade).filter(Boolean)
-  //   );
+//   const uniqueGrades = new Set(
+//     grades.map((g) => g.grade).filter(Boolean)
+//   );
 
-  //   return gradeOrder
-  //     .filter((grade) => uniqueGrades.has(grade))
-  //     .map((grade) => ({
-  //       value: grade,
-  //       label: grade,
-  //     }));
-  // }, [grades]);
+//   return gradeOrder
+//     .filter((grade) => uniqueGrades.has(grade))
+//     .map((grade) => ({
+//       value: grade,
+//       label: grade,
+//     }));
+// }, [grades]);
 
   const fetchPrograms = async () => {
     try {
@@ -405,12 +405,9 @@ export default function GradesPage() {
           <CardTitle>
             Student Grades ({grades.length})
             {loading && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
-                <div className="flex items-center gap-3 rounded-lg bg-white px-6 py-4 shadow-lg">
-                  <Spinner />
-                  <span className="text-sm font-medium">Loading...</span>
-                </div>
-              </div>
+              <span className="text-sm font-normal text-muted-foreground ml-2">
+                <Spinner className="inline" /> Loading...
+              </span>
             )}
           </CardTitle>
         </CardHeader>
