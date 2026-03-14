@@ -141,7 +141,7 @@ export default function LoginPage() {
           <Image
             src="/logo.webp"
             fetchPriority="high"
-            alt="Logo"
+            alt="Logoddd"
             width={90}
             height={90}
             priority
