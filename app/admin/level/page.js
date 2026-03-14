@@ -32,58 +32,36 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, Pencil, Trash2, Search } from "lucide-react";
 import { toast } from "sonner";
 
-export default function ProgramsPage() {
-  const [programs, setPrograms] = useState([]);
+export default function LevelsPage() {
+  const [levels, setLevels] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingProgram, setEditingProgram] = useState(null);
+  const [editingLevel, setEditingLevel] = useState(null);
   const [deleteDialog, setDeleteDialog] = useState({ open: false, id: null });
+
   const [formData, setFormData] = useState({
     name: "",
-    abbreviation: "",
   });
+
   const [submitting, setSubmitting] = useState(false);
-  const [stats, setStats] = useState({});
 
   useEffect(() => {
-    fetchPrograms();
+    fetchLevels();
   }, []);
 
-  const fetchPrograms = async () => {
+  const fetchLevels = async () => {
     try {
-      const res = await api.get("/exams/admin/programs/");
-      setPrograms(res.data.results);
-      
-      // Fetch stats for each program
-      const statsPromises = res.data.results.map(async (program) => {
-        const [studentsRes, proceduresRes] = await Promise.all([
-          api.get(`/exams/programs/${program.id}/students/`),
-          api.get(`/exams/programs/${program.id}/procedures/`),
-        ]);
-        return {
-          id: program.id,
-          students: studentsRes.data.count,
-          procedures: proceduresRes.data.count,
-        };
-      });
-      
-      const programStats = await Promise.all(statsPromises);
-      const statsMap = {};
-      programStats.forEach((stat) => {
-        statsMap[stat.id] = stat;
-      });
-      setStats(statsMap);
-      
+      const res = await api.get("/exams/levels/");
+      setLevels(res.data.results);
       setLoading(false);
     } catch (err) {
       console.error(err);
-      toast.error("Failed to load programs");
+      toast.error("Failed to load levels");
       setLoading(false);
     }
   };
@@ -93,16 +71,17 @@ export default function ProgramsPage() {
     setSubmitting(true);
 
     try {
-      if (editingProgram) {
-        await api.patch(`/exams/admin/programs/${editingProgram.id}/`, formData);
-        toast.success("Program updated successfully");
+      if (editingLevel) {
+        await api.patch(`/exams/levels/${editingLevel.id}/`, formData);
+        toast.success("Level updated successfully");
       } else {
-        await api.post("/exams/admin/programs/", formData);
-        toast.success("Program created successfully");
+        await api.post("/exams/levels/", formData);
+        toast.success("Level created successfully");
       }
+
       setDialogOpen(false);
       resetForm();
-      fetchPrograms();
+      fetchLevels();
     } catch (err) {
       console.error(err);
       toast.error("Operation failed");
@@ -111,45 +90,39 @@ export default function ProgramsPage() {
     }
   };
 
-  const handleEdit = (program) => {
-    setEditingProgram(program);
+  const handleEdit = (level) => {
+    setEditingLevel(level);
     setFormData({
-      name: program.name,
-      abbreviation: program.abbreviation || "",
+      name: level.name,
     });
     setDialogOpen(true);
   };
 
   const handleDelete = async () => {
     try {
-      await api.delete(`/exams/admin/programs/${deleteDialog.id}/`);
-      toast.success("Program deleted successfully");
+      await api.delete(`/exams/levels/${deleteDialog.id}/`);
+      toast.success("Level deleted successfully");
       setDeleteDialog({ open: false, id: null });
-      fetchPrograms();
+      fetchLevels();
     } catch (err) {
       console.error(err);
-      toast.error("Failed to delete program. It may have related records.");
+      toast.error("Failed to delete level");
     }
   };
 
   const resetForm = () => {
     setFormData({
       name: "",
-      abbreviation: "",
     });
-    setEditingProgram(null);
+    setEditingLevel(null);
   };
 
-  const filteredPrograms = programs.filter((program) =>
-    program.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (program.abbreviation &&
-      program.abbreviation.toLowerCase().includes(searchQuery.toLowerCase()))
+  const filteredLevels = levels.filter((level) =>
+    level.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   if (loading) {
-    return <DashboardSkeleton
-      showStats={false}
-    />;
+    return <DashboardSkeleton showStats={false} />;
   }
 
   return (
@@ -157,11 +130,12 @@ export default function ProgramsPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between gap-2">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Programs</h2>
+          <h2 className="text-2xl font-bold tracking-tight">Levels</h2>
           <p className="text-muted-foreground">
-            Manage academic programs and their configurations
+            Manage academic levels in the system
           </p>
         </div>
+
         <Button
           onClick={() => {
             resetForm();
@@ -169,7 +143,7 @@ export default function ProgramsPage() {
           }}
         >
           <Plus className="mr-2 h-4 w-4" />
-          Add Program
+          Add Level
         </Button>
       </div>
 
@@ -177,8 +151,9 @@ export default function ProgramsPage() {
       <div className="flex items-center gap-2">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+
           <Input
-            placeholder="Search programs..."
+            placeholder="Search levels..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-8"
@@ -189,65 +164,47 @@ export default function ProgramsPage() {
       {/* Table */}
       <Card>
         <CardHeader>
-          <CardTitle>All Programs ({filteredPrograms.length})</CardTitle>
+          <CardTitle>All Levels ({filteredLevels.length})</CardTitle>
         </CardHeader>
+
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Program Name</TableHead>
-                <TableHead>Abbreviation</TableHead>
-                <TableHead>Students</TableHead>
-                <TableHead>Procedures</TableHead>
+                <TableHead>Level Name</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
+
             <TableBody>
-              {filteredPrograms.length === 0 ? (
+              {filteredLevels.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-6">
-                    No programs found
+                  <TableCell colSpan={2} className="text-center py-6">
+                    No levels found
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredPrograms.map((program) => (
-                  <TableRow key={program.id}>
+                filteredLevels.map((level) => (
+                  <TableRow key={level.id}>
                     <TableCell className="font-medium">
-                      {program.name}
+                      {level.name}
                     </TableCell>
-                    <TableCell>
-                      {program.abbreviation ? (
-                        <Badge variant="secondary">
-                          {program.abbreviation}
-                        </Badge>
-                      ) : (
-                        <span className="text-muted-foreground">-</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Badge >
-                        {stats[program.id]?.students || 0} students
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge >
-                        {stats[program.id]?.procedures || 0} procedures
-                      </Badge>
-                    </TableCell>
+
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleEdit(program)}
+                          onClick={() => handleEdit(level)}
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
+
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() =>
-                            setDeleteDialog({ open: true, id: program.id })
+                            setDeleteDialog({ open: true, id: level.id })
                           }
                         >
                           <Trash2 className="h-4 w-4 text-destructive" />
@@ -267,37 +224,28 @@ export default function ProgramsPage() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>
-              {editingProgram ? "Edit Program" : "Add New Program"}
+              {editingLevel ? "Edit Level" : "Add New Level"}
             </DialogTitle>
+
             <DialogDescription>
-              {editingProgram
-                ? "Update program information"
-                : "Create a new academic program"}
+              {editingLevel
+                ? "Update level information"
+                : "Create a new academic level"}
             </DialogDescription>
           </DialogHeader>
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Program Name</Label>
+              <Label htmlFor="name">Level Name</Label>
+
               <Input
                 id="name"
                 value={formData.name}
                 onChange={(e) =>
                   setFormData({ ...formData, name: e.target.value })
                 }
-                placeholder="e.g., Bachelor of Science in Nursing"
+                placeholder="e.g., Level 100"
                 required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="abbreviation">Abbreviation (Optional)</Label>
-              <Input
-                id="abbreviation"
-                value={formData.abbreviation}
-                onChange={(e) =>
-                  setFormData({ ...formData, abbreviation: e.target.value })
-                }
-                placeholder="e.g., BSN"
               />
             </div>
 
@@ -312,12 +260,13 @@ export default function ProgramsPage() {
               >
                 Cancel
               </Button>
+
               <Button type="submit" disabled={submitting}>
                 {submitting
                   ? "Saving..."
-                  : editingProgram
-                  ? "Update Program"
-                  : "Create Program"}
+                  : editingLevel
+                  ? "Update Level"
+                  : "Create Level"}
               </Button>
             </DialogFooter>
           </form>
@@ -332,15 +281,20 @@ export default function ProgramsPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+
             <AlertDialogDescription>
-              This will permanently delete the program. Make sure there are no
-              students or procedures associated with it. This action cannot be
+              This will permanently delete the level. This action cannot be
               undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
+
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive">
+
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive"
+            >
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>

@@ -13,7 +13,6 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-
 import {
   Stethoscope,
   HeartPulse,
@@ -22,41 +21,53 @@ import {
   HandHeart,
 } from "lucide-react";
 
-const programIcons = {
-  RGN: Stethoscope,
-  RM: HeartPulse,
-  PHN: HandHeart,
+const PROGRAM_ICONS = {
+  RGN:  Stethoscope,
+  RM:   HeartPulse,
+  PHN:  HandHeart,
   RNAP: GraduationCap,
-  default: BookOpen,
 };
 
 export default function ProgramsPage() {
-  const [programs, setPrograms] = useState([]);
   const router = useRouter();
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading: authLoading } = useAuth();
 
+  const [programs, setPrograms]         = useState([]);
+  const [programsLoading, setProgramsLoading] = useState(false);
+
+  // Redirect unauthenticated users
   useEffect(() => {
-    if (!loading && !isAuthenticated) {
-      router.push("/");
-    }
-  }, [loading, isAuthenticated, router]);
+    if (!authLoading && !isAuthenticated) router.push("/");
+  }, [authLoading, isAuthenticated, router]);
 
+  // Fetch programs only once auth is confirmed
   useEffect(() => {
-  if (isAuthenticated) {
-    api.get("/exams/programs/")
-      .then(res => setPrograms(res.data))
-      .catch(() => {});
-  }
-}, [isAuthenticated]);
+    if (!isAuthenticated) return;
 
+    setProgramsLoading(true);
+    api
+      .get("/exams/programs/")
+      .then((res) => {
+        // Endpoint returns a plain array (no pagination wrapper)
+        setPrograms(Array.isArray(res.data) ? res.data : (res.data?.results ?? []));
+      })
+      .catch(() => {
+        // Silently fail — user will see an empty grid
+      })
+      .finally(() => setProgramsLoading(false));
+  }, [isAuthenticated]);
+
+  const isLoading = authLoading || programsLoading;
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
-      <h1 className="text-2xl uppercase text-center font-bold mb-6">Select Program</h1>
+      <h1 className="text-2xl uppercase text-center font-bold mb-6">
+        Select Program
+      </h1>
 
       <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
-        {/* Skeleton loaders */}
-        {loading &&
+        {/* Skeleton cards while loading */}
+        {isLoading &&
           Array.from({ length: 6 }).map((_, i) => (
             <Card key={i}>
               <CardHeader className="space-y-3">
@@ -68,17 +79,13 @@ export default function ProgramsPage() {
           ))}
 
         {/* Program cards */}
-        {!loading &&
+        {!isLoading &&
           programs.map((program) => {
-            const Icon =
-              programIcons[program.abbreviation] || programIcons.default;
-
+            const Icon = PROGRAM_ICONS[program.abbreviation] ?? BookOpen;
             return (
               <Card
                 key={program.id}
-                onClick={() =>
-                  router.push(`/programs/${program.id}`)
-                }
+                onClick={() => router.push(`/programs/${program.id}`)}
                 className="cursor-pointer transition hover:shadow-md hover:border-primary"
               >
                 <CardHeader className="space-y-3">
@@ -90,11 +97,7 @@ export default function ProgramsPage() {
                         : "General"}
                     </Badge>
                   </div>
-
-                  <CardTitle className="text-lg">
-                    {program.name}
-                  </CardTitle>
-
+                  <CardTitle className="text-lg">{program.name}</CardTitle>
                   <CardDescription>
                     Click to view students and procedures
                   </CardDescription>
@@ -102,6 +105,13 @@ export default function ProgramsPage() {
               </Card>
             );
           })}
+
+        {/* Empty state */}
+        {!isLoading && programs.length === 0 && (
+          <p className="col-span-full text-center text-muted-foreground py-12">
+            No programs available.
+          </p>
+        )}
       </div>
     </div>
   );

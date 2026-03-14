@@ -1,7 +1,654 @@
+// "use client";
+
+// import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+// import { api } from "@/lib/api";
+// import DashboardSkeleton from "@/components/DashboardSkeleton";
+// import { Button } from "@/components/ui/button";
+// import { Input } from "@/components/ui/input";
+// import { Label } from "@/components/ui/label";
+// import {
+//   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+// } from "@/components/ui/table";
+// import {
+//   Dialog, DialogContent, DialogDescription, DialogFooter,
+//   DialogHeader, DialogTitle,
+// } from "@/components/ui/dialog";
+// import {
+//   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+//   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+// } from "@/components/ui/alert-dialog";
+// import {
+//   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+// } from "@/components/ui/dropdown-menu";
+// import {
+//   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+// } from "@/components/ui/select";
+// import { Badge } from "@/components/ui/badge";
+// import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+// import { Checkbox } from "@/components/ui/checkbox";
+// import {
+//   Plus, Pencil, Trash2, Search, Download, Upload, FileText,
+//   ChevronDown, Layers, ListOrdered
+// } from "lucide-react";
+// import { toast } from "sonner";
+
+// // ─── helpers ───────────────────────────────────────────────────────────────
+
+// const EMPTY_FORM = { name: "", program_id: "", total_score: "" };
+
+// // ─── component ─────────────────────────────────────────────────────────────
+
+// export default function ProceduresPage() {
+//   const [procedures, setProcedures] = useState([]);
+//   const [programs, setPrograms] = useState([]);
+//   const [loading, setLoading] = useState(true);
+//   const [searchQuery, setSearchQuery] = useState("");
+//   const [programFilter, setProgramFilter] = useState("all");
+
+//   // Selection
+//   const [selectedIds, setSelectedIds] = useState(new Set());
+
+//   // Dialogs
+//   const [dialogOpen, setDialogOpen] = useState(false);
+//   const [editingProcedure, setEditingProcedure] = useState(null);
+//   const [deleteDialog, setDeleteDialog] = useState({ open: false, id: null });
+//   const [bulkDeleteDialog, setBulkDeleteDialog] = useState(false);
+
+//   // Import
+//   const [importDialog, setImportDialog] = useState(false);
+//   const [importFile, setImportFile] = useState(null);
+//   const [importing, setImporting] = useState(false);
+//   const fileInputRef = useRef(null);
+
+//   const [formData, setFormData] = useState(EMPTY_FORM);
+//   const [submitting, setSubmitting] = useState(false);
+
+//   // ── data loading ──────────────────────────────────────────────────────────
+
+//   const fetchData = useCallback(async () => {
+//     try {
+//       const [procsRes, programsRes] = await Promise.all([
+//         api.get("/exams/admin/procedures/"),
+//         api.get("/exams/admin/programs/"),
+//       ]);
+//       setProcedures(procsRes.data?.results ?? procsRes.data ?? []);
+//       setPrograms(programsRes.data?.results ?? programsRes.data ?? []);
+//     } catch {
+//       toast.error("Failed to load procedures");
+//     } finally {
+//       setLoading(false);
+//     }
+//   }, []);
+
+//   useEffect(() => { fetchData(); }, [fetchData]);
+
+//   // ── derived data ──────────────────────────────────────────────────────────
+
+//   const filtered = useMemo(() => {
+//     const q = searchQuery.toLowerCase();
+//     return procedures.filter((p) => {
+//       const matchSearch =
+//         !q ||
+//         p.name.toLowerCase().includes(q) ||
+//         (p.program && p.program.toLowerCase().includes(q));
+//       const matchProgram =
+//         programFilter === "all" || String(p.program_id) === String(programFilter);
+//       return matchSearch && matchProgram;
+//     });
+//   }, [procedures, searchQuery, programFilter]);
+
+//   const allOnPageSelected =
+//     filtered.length > 0 && filtered.every((p) => selectedIds.has(p.id));
+//   const someSelected = selectedIds.size > 0;
+
+//   // ── selection handlers ────────────────────────────────────────────────────
+
+//   const toggleSelectAll = () => {
+//     if (allOnPageSelected) {
+//       setSelectedIds((prev) => {
+//         const next = new Set(prev);
+//         filtered.forEach((p) => next.delete(p.id));
+//         return next;
+//       });
+//     } else {
+//       setSelectedIds((prev) => {
+//         const next = new Set(prev);
+//         filtered.forEach((p) => next.add(p.id));
+//         return next;
+//       });
+//     }
+//   };
+
+//   const toggleSelect = (id) => {
+//     setSelectedIds((prev) => {
+//       const next = new Set(prev);
+//       next.has(id) ? next.delete(id) : next.add(id);
+//       return next;
+//     });
+//   };
+
+//   // ── CRUD ──────────────────────────────────────────────────────────────────
+
+//   const handleSubmit = async (e) => {
+//     e.preventDefault();
+//     setSubmitting(true);
+//     try {
+//       const payload = {
+//         name: formData.name,
+//         program_id: parseInt(formData.program_id),
+//         total_score: parseInt(formData.total_score),
+//       };
+//       if (editingProcedure) {
+//         await api.patch(`/exams/admin/procedures/${editingProcedure.id}/`, payload);
+//         toast.success("Procedure updated");
+//       } else {
+//         await api.post("/exams/admin/procedures/", payload);
+//         toast.success("Procedure created");
+//       }
+//       setDialogOpen(false);
+//       resetForm();
+//       fetchData();
+//     } catch {
+//       toast.error("Operation failed");
+//     } finally {
+//       setSubmitting(false);
+//     }
+//   };
+
+//   const handleEdit = (proc) => {
+//     setEditingProcedure(proc);
+//     setFormData({
+//       name: proc.name,
+//       program_id: String(proc.program_id),
+//       total_score: String(proc.total_score),
+//     });
+//     setDialogOpen(true);
+//   };
+
+//   const handleDelete = async () => {
+//     try {
+//       await api.delete(`/exams/admin/procedures/${deleteDialog.id}/`);
+//       toast.success("Procedure deleted");
+//       setDeleteDialog({ open: false, id: null });
+//       setSelectedIds((prev) => { const n = new Set(prev); n.delete(deleteDialog.id); return n; });
+//       fetchData();
+//     } catch {
+//       toast.error("Failed to delete. It may have related records.");
+//     }
+//   };
+
+//   const handleBulkDelete = async () => {
+//     try {
+//       await api.post("/exams/procedures/bulk-delete/", {
+//         procedure_ids: [...selectedIds],
+//       });
+//       toast.success(`Deleted ${selectedIds.size} procedure(s)`);
+//       setSelectedIds(new Set());
+//       setBulkDeleteDialog(false);
+//       fetchData();
+//     } catch {
+//       toast.error("Bulk delete failed");
+//     }
+//   };
+
+//   const resetForm = () => {
+//     setFormData(EMPTY_FORM);
+//     setEditingProcedure(null);
+//   };
+
+//   // ── export ────────────────────────────────────────────────────────────────
+
+//   const handleExport = async (format) => {
+//     try {
+//       const params = new URLSearchParams({ export: format });
+//       if (programFilter !== "all") params.set("program_id", programFilter);
+//       const res = await api.get(`/exams/admin/procedures/?${params}`, {
+//         responseType: "blob",
+//       });
+//       const ext = format === "excel" ? "xlsx" : format;
+//       const url = URL.createObjectURL(res.data);
+//       const a = document.createElement("a");
+//       a.href = url;
+//       a.download = `procedures.${ext}`;
+//       a.click();
+//       URL.revokeObjectURL(url);
+//     } catch {
+//       toast.error("Export failed");
+//     }
+//   };
+
+//   // ── import ────────────────────────────────────────────────────────────────
+
+//   const handleImport = async () => {
+//     if (!importFile) return;
+//     setImporting(true);
+//     try {
+//       const fd = new FormData();
+//       fd.append("file", importFile);
+//       const res = await api.post("/exams/procedures/import/", fd, {
+//         headers: { "Content-Type": "multipart/form-data" },
+//       });
+//       const d = res.data;
+//       toast.success(
+//         `Imported: ${d.procedures_created} created, ${d.procedures_updated} updated`
+//       );
+//       if (d.error_details?.length) {
+//         d.error_details.forEach((e) => toast.warning(e));
+//       }
+//       setImportDialog(false);
+//       setImportFile(null);
+//       fetchData();
+//     } catch {
+//       toast.error("Import failed");
+//     } finally {
+//       setImporting(false);
+//     }
+//   };
+
+//   const handleDownloadTemplate = async () => {
+//     try {
+//       const res = await api.get("/exams/procedures/template/", { responseType: "blob" });
+//       const url = URL.createObjectURL(res.data);
+//       const a = document.createElement("a");
+//       a.href = url;
+//       a.download = "procedures_import_template.xlsx";
+//       a.click();
+//       URL.revokeObjectURL(url);
+//     } catch {
+//       toast.error("Failed to download template");
+//     }
+//   };
+
+//   // ─────────────────────────────────────────────────────────────────────────
+
+//   if (loading) return <DashboardSkeleton showStats={false} />;
+
+//   return (
+//     <div className="space-y-6">
+//       {/* Header */}
+//       <div className="flex flex-col md:flex-row justify-between gap-3">
+//         <div>
+//           <h2 className="text-2xl font-bold tracking-tight">Procedures</h2>
+//           <p className="text-muted-foreground">
+//             Manage assessment procedures and their steps
+//           </p>
+//         </div>
+
+//         <div className="flex flex-wrap items-center gap-2">
+//           {someSelected && (
+//             <Button
+//               variant="destructive"
+//               size="sm"
+//               onClick={() => setBulkDeleteDialog(true)}
+//             >
+//               <Trash2 className="mr-1.5 h-4 w-4" />
+//               Delete {selectedIds.size} selected
+//             </Button>
+//           )}
+
+//           {/* Export */}
+//           <DropdownMenu>
+//             <DropdownMenuTrigger asChild>
+//               <Button variant="outline" size="sm">
+//                 <Download className="mr-1.5 h-4 w-4" />
+//                 Export
+//                 <ChevronDown className="ml-1 h-3.5 w-3.5 opacity-60" />
+//               </Button>
+//             </DropdownMenuTrigger>
+//             <DropdownMenuContent align="end">
+//               <DropdownMenuItem onClick={() => handleExport("csv")}>
+//                 <FileText className="mr-2 h-4 w-4" /> CSV
+//               </DropdownMenuItem>
+//               <DropdownMenuItem onClick={() => handleExport("excel")}>
+//                 <FileText className="mr-2 h-4 w-4" /> Excel
+//               </DropdownMenuItem>
+//               <DropdownMenuItem onClick={() => handleExport("pdf")}>
+//                 <FileText className="mr-2 h-4 w-4" /> PDF
+//               </DropdownMenuItem>
+//             </DropdownMenuContent>
+//           </DropdownMenu>
+
+//           {/* Import */}
+//           <DropdownMenu>
+//             <DropdownMenuTrigger asChild>
+//               <Button variant="outline" size="sm">
+//                 <Upload className="mr-1.5 h-4 w-4" />
+//                 Import
+//                 <ChevronDown className="ml-1 h-3.5 w-3.5 opacity-60" />
+//               </Button>
+//             </DropdownMenuTrigger>
+//             <DropdownMenuContent align="end">
+//               <DropdownMenuItem onClick={() => setImportDialog(true)}>
+//                 <Upload className="mr-2 h-4 w-4" /> Upload file
+//               </DropdownMenuItem>
+//               <DropdownMenuItem onClick={handleDownloadTemplate}>
+//                 <Download className="mr-2 h-4 w-4" /> Download template
+//               </DropdownMenuItem>
+//             </DropdownMenuContent>
+//           </DropdownMenu>
+
+//           <Button
+//             onClick={() => {
+//               resetForm();
+//               setDialogOpen(true);
+//             }}
+//             size="sm"
+//           >
+//             <Plus className="mr-1.5 h-4 w-4" />
+//             Add Procedure
+//           </Button>
+//         </div>
+//       </div>
+
+//       {/* Filters */}
+//       <div className="flex flex-wrap gap-2">
+//         <div className="relative flex-1 min-w-[200px] max-w-xs">
+//           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+//           <Input
+//             placeholder="Search procedures..."
+//             value={searchQuery}
+//             onChange={(e) => setSearchQuery(e.target.value)}
+//             className="pl-8"
+//           />
+//         </div>
+
+//         <Select value={programFilter} onValueChange={setProgramFilter}>
+//           <SelectTrigger className="w-[220px]">
+//             <SelectValue placeholder="Filter by program" />
+//           </SelectTrigger>
+//           <SelectContent>
+//             <SelectItem value="all">All Programs</SelectItem>
+//             {programs.map((p) => (
+//               <SelectItem key={p.id} value={String(p.id)}>
+//                 {p.name}
+//               </SelectItem>
+//             ))}
+//           </SelectContent>
+//         </Select>
+//       </div>
+
+//       {/* Selection summary */}
+//       {someSelected && (
+//         <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 px-3 py-2 rounded-md">
+//           <Layers className="h-4 w-4" />
+//           {selectedIds.size} of {filtered.length} procedures selected
+//           <button
+//             className="ml-auto text-xs underline"
+//             onClick={() => setSelectedIds(new Set())}
+//           >
+//             Clear selection
+//           </button>
+//         </div>
+//       )}
+
+//       {/* Table */}
+//       <Card>
+//         <CardHeader>
+//           <CardTitle>
+//             All Procedures ({filtered.length})
+//           </CardTitle>
+//         </CardHeader>
+//         <CardContent className="p-0">
+//           <Table>
+//             <TableHeader>
+//               <TableRow>
+//                 <TableHead className="w-10 pl-4">
+//                   <Checkbox
+//                     checked={allOnPageSelected}
+//                     onCheckedChange={toggleSelectAll}
+//                     aria-label="Select all"
+//                   />
+//                 </TableHead>
+//                 <TableHead>Procedure Name</TableHead>
+//                 <TableHead>Program</TableHead>
+//                 <TableHead className="text-center">Total Score</TableHead>
+//                 <TableHead className="text-center">Steps</TableHead>
+//                 <TableHead className="text-right pr-4">Actions</TableHead>
+//               </TableRow>
+//             </TableHeader>
+//             <TableBody>
+//               {filtered.length === 0 ? (
+//                 <TableRow>
+//                   <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
+//                     No procedures found
+//                   </TableCell>
+//                 </TableRow>
+//               ) : (
+//                 filtered.map((proc) => (
+//                   <TableRow
+//                     key={proc.id}
+//                     data-state={selectedIds.has(proc.id) ? "selected" : undefined}
+//                     className={selectedIds.has(proc.id) ? "bg-muted/40" : undefined}
+//                   >
+//                     <TableCell className="pl-4">
+//                       <Checkbox
+//                         checked={selectedIds.has(proc.id)}
+//                         onCheckedChange={() => toggleSelect(proc.id)}
+//                         aria-label={`Select ${proc.name}`}
+//                       />
+//                     </TableCell>
+//                     <TableCell className="max-w-[250px] truncate font-medium">{proc.name}</TableCell>
+//                     <TableCell className="max-w-[100px]">
+//                       {proc.program}
+//                     </TableCell>
+//                     <TableCell className="text-center max-w-[30px]">
+//                       <Badge variant="secondary">{proc.total_score} pts</Badge>
+//                     </TableCell>
+//                     <TableCell className="text-center max-w-[30px]">
+//                       {proc.step_count ?? 0} step{proc.step_count !== 1 ? "s" : ""}
+//                     </TableCell>
+//                     <TableCell className="text-right pr-4 max-w-[30px]">
+//                       <div className="flex items-center justify-end gap-1">
+//                         <Button
+//                           variant="ghost"
+//                           size="icon"
+//                           onClick={() => handleEdit(proc)}
+//                         >
+//                           <Pencil className="h-4 w-4" />
+//                         </Button>
+//                         <Button
+//                           variant="ghost"
+//                           size="icon"
+//                           onClick={() =>
+//                             setDeleteDialog({ open: true, id: proc.id })
+//                           }
+//                         >
+//                           <Trash2 className="h-4 w-4 text-destructive" />
+//                         </Button>
+//                       </div>
+//                     </TableCell>
+//                   </TableRow>
+//                 ))
+//               )}
+//             </TableBody>
+//           </Table>
+//         </CardContent>
+//       </Card>
+
+//       {/* Add / Edit Dialog */}
+//       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+//         <DialogContent className="sm:max-w-md">
+//           <DialogHeader>
+//             <DialogTitle>
+//               {editingProcedure ? "Edit Procedure" : "Add New Procedure"}
+//             </DialogTitle>
+//             <DialogDescription>
+//               {editingProcedure
+//                 ? "Update procedure information"
+//                 : "Create a new assessment procedure"}
+//             </DialogDescription>
+//           </DialogHeader>
+//           <form onSubmit={handleSubmit} className="space-y-4">
+//             <div className="space-y-2">
+//               <Label htmlFor="proc-name">Procedure Name</Label>
+//               <Input
+//                 id="proc-name"
+//                 value={formData.name}
+//                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+//                 placeholder="e.g., IV Catheter Insertion"
+//                 required
+//               />
+//             </div>
+
+//             <div className="space-y-2">
+//               <Label htmlFor="proc-program">Program</Label>
+//               <Select
+//                 value={formData.program_id}
+//                 onValueChange={(v) => setFormData({ ...formData, program_id: v })}
+//                 required
+//               >
+//                 <SelectTrigger id="proc-program">
+//                   <SelectValue placeholder="Select a program" />
+//                 </SelectTrigger>
+//                 <SelectContent>
+//                   {programs.map((p) => (
+//                     <SelectItem key={p.id} value={String(p.id)}>
+//                       {p.name}
+//                     </SelectItem>
+//                   ))}
+//                 </SelectContent>
+//               </Select>
+//             </div>
+
+//             <div className="space-y-2">
+//               <Label htmlFor="proc-score">Total Score</Label>
+//               <Input
+//                 id="proc-score"
+//                 type="number"
+//                 min={1}
+//                 value={formData.total_score}
+//                 onChange={(e) => setFormData({ ...formData, total_score: e.target.value })}
+//                 placeholder="e.g., 20"
+//                 required
+//               />
+//             </div>
+
+//             <DialogFooter>
+//               <Button
+//                 type="button"
+//                 variant="outline"
+//                 onClick={() => { setDialogOpen(false); resetForm(); }}
+//               >
+//                 Cancel
+//               </Button>
+//               <Button type="submit" disabled={submitting || !formData.program_id}>
+//                 {submitting
+//                   ? "Saving..."
+//                   : editingProcedure ? "Update" : "Create"}
+//               </Button>
+//             </DialogFooter>
+//           </form>
+//         </DialogContent>
+//       </Dialog>
+
+//       {/* Single delete */}
+//       <AlertDialog
+//         open={deleteDialog.open}
+//         onOpenChange={(open) => setDeleteDialog({ ...deleteDialog, open })}
+//       >
+//         <AlertDialogContent>
+//           <AlertDialogHeader>
+//             <AlertDialogTitle>Delete this procedure?</AlertDialogTitle>
+//             <AlertDialogDescription>
+//               All steps associated with this procedure will also be deleted.
+//               This action cannot be undone.
+//             </AlertDialogDescription>
+//           </AlertDialogHeader>
+//           <AlertDialogFooter>
+//             <AlertDialogCancel>Cancel</AlertDialogCancel>
+//             <AlertDialogAction
+//               onClick={handleDelete}
+//               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+//             >
+//               Delete
+//             </AlertDialogAction>
+//           </AlertDialogFooter>
+//         </AlertDialogContent>
+//       </AlertDialog>
+
+//       {/* Bulk delete */}
+//       <AlertDialog open={bulkDeleteDialog} onOpenChange={setBulkDeleteDialog}>
+//         <AlertDialogContent>
+//           <AlertDialogHeader>
+//             <AlertDialogTitle>
+//               Delete {selectedIds.size} procedure{selectedIds.size !== 1 ? "s" : ""}?
+//             </AlertDialogTitle>
+//             <AlertDialogDescription>
+//               All steps for the selected procedures will also be permanently deleted.
+//               This action cannot be undone.
+//             </AlertDialogDescription>
+//           </AlertDialogHeader>
+//           <AlertDialogFooter>
+//             <AlertDialogCancel>Cancel</AlertDialogCancel>
+//             <AlertDialogAction
+//               onClick={handleBulkDelete}
+//               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+//             >
+//               Delete all {selectedIds.size}
+//             </AlertDialogAction>
+//           </AlertDialogFooter>
+//         </AlertDialogContent>
+//       </AlertDialog>
+
+//       {/* Import dialog */}
+//       <Dialog open={importDialog} onOpenChange={setImportDialog}>
+//         <DialogContent className="sm:max-w-md">
+//           <DialogHeader>
+//             <DialogTitle>Import Procedures</DialogTitle>
+//             <DialogDescription>
+//               Upload an Excel or CSV file. Use the template for the correct format.
+//             </DialogDescription>
+//           </DialogHeader>
+//           <div className="space-y-4">
+//             <div
+//               className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary transition-colors"
+//               onClick={() => fileInputRef.current?.click()}
+//             >
+//               {importFile ? (
+//                 <p className="text-sm font-medium">{importFile.name}</p>
+//               ) : (
+//                 <>
+//                   <Upload className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
+//                   <p className="text-sm text-muted-foreground">
+//                     Click to select or drag & drop a file
+//                   </p>
+//                   <p className="text-xs text-muted-foreground mt-1">.xlsx, .xls, .csv</p>
+//                 </>
+//               )}
+//               <input
+//                 ref={fileInputRef}
+//                 type="file"
+//                 accept=".xlsx,.xls,.csv"
+//                 className="hidden"
+//                 onChange={(e) => setImportFile(e.target.files?.[0] ?? null)}
+//               />
+//             </div>
+//           </div>
+//           <DialogFooter>
+//             <Button
+//               variant="outline"
+//               onClick={() => { setImportDialog(false); setImportFile(null); }}
+//             >
+//               Cancel
+//             </Button>
+//             <Button onClick={handleImport} disabled={!importFile || importing}>
+//               {importing ? "Importing..." : "Import"}
+//             </Button>
+//           </DialogFooter>
+//         </DialogContent>
+//       </Dialog>
+//     </div>
+//   );
+// }
+
+
+
+
+
 "use client";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import DashboardSkeleton from "@/components/DashboardSkeleton";
 import { Button } from "@/components/ui/button";
@@ -9,718 +656,530 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
+  Dialog, DialogContent, DialogDescription, DialogFooter,
+  DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  Plus,
-  Pencil,
-  Trash2,
-  Search,
-  ListOrdered,
-  Download,
-  FileDown,
-  Upload,
+  Plus, Pencil, Trash2, Search, Download, Upload, FileText,
+  ChevronDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight,
+  Layers,
 } from "lucide-react";
 import { toast } from "sonner";
 
+const EMPTY_FORM = { name: "", program_id: "", total_score: "" };
+const PAGE_SIZES = [25, 50, 100, 200];
+
 export default function ProceduresPage() {
-  const [procedures, setProcedures] = useState([]);
-  const [programs, setPrograms] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filterProgram, setFilterProgram] = useState("all");
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const router = useRouter();
+
+  const [programs, setPrograms]             = useState([]);
+  const [supportLoading, setSupportLoading] = useState(true);
+  const [procedures, setProcedures]         = useState([]);
+  const [totalCount, setTotalCount]         = useState(0);
+  const [fetching, setFetching]             = useState(false);
+  const [page, setPage]                     = useState(1);
+  const [pageSize, setPageSize]             = useState(50);
+  const [searchQuery, setSearchQuery]       = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [programFilter, setProgramFilter]   = useState("all");
+
+  // Selection
+  const [selectedIds, setSelectedIds]     = useState(new Set());
+  const [selectAllMode, setSelectAllMode] = useState(false);
+
+  // CRUD
+  const [dialogOpen, setDialogOpen]             = useState(false);
   const [editingProcedure, setEditingProcedure] = useState(null);
-  const [selectedProcedures, setSelectedProcedures] = useState([]);
+  const [deleteDialog, setDeleteDialog]         = useState({ open: false, id: null });
   const [bulkDeleteDialog, setBulkDeleteDialog] = useState(false);
-  const [deleteDialog, setDeleteDialog] = useState({ open: false, id: null });
-  const [formData, setFormData] = useState({
-    name: "",
-    program_id: "",
-    total_score: "",
-  });
-  const [submitting, setSubmitting] = useState(false);
+  const [bulkDeleting, setBulkDeleting]         = useState(false);
+  const [formData, setFormData]                 = useState(EMPTY_FORM);
+  const [submitting, setSubmitting]             = useState(false);
 
-  const [exportFormat, setExportFormat] = useState("excel");
+  // Import
+  const fileInputRef = useRef(null);
   const [importDialog, setImportDialog] = useState(false);
-  const [importFile, setImportFile] = useState(null);
-  const [importing, setImporting] = useState(false);
-  const [importResult, setImportResult] = useState(null);
+  const [importFile, setImportFile]     = useState(null);
+  const [importing, setImporting]       = useState(false);
 
+  // Debounce search
   useEffect(() => {
-    fetchData();
+    const t = setTimeout(() => { setDebouncedSearch(searchQuery); setPage(1); }, 350);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
+
+  useEffect(() => { setPage(1); clearSelection(); }, [programFilter, pageSize, debouncedSearch]);
+
+  // Load programs once
+  useEffect(() => {
+    api.get("/exams/admin/programs/")
+      .then((res) => setPrograms(Array.isArray(res.data) ? res.data : (res.data?.results ?? [])))
+      .catch(() => toast.error("Failed to load programs"))
+      .finally(() => setSupportLoading(false));
   }, []);
 
-  const fetchData = async () => {
+  const buildFilterParams = useCallback(() => {
+    const params = new URLSearchParams();
+    if (debouncedSearch)         params.set("search", debouncedSearch);
+    if (programFilter !== "all") params.set("program_id", programFilter);
+    return params;
+  }, [debouncedSearch, programFilter]);
+
+  const fetchProcedures = useCallback(async () => {
+    setFetching(true);
     try {
-      const [proceduresRes, programsRes] = await Promise.all([
-        api.get("/exams/admin/procedures/"),
-        api.get("/exams/programs/"),
-      ]);
-      setProcedures(proceduresRes.data);
-      setPrograms(programsRes.data);
-      setLoading(false);
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to load data");
-      setLoading(false);
-    }
-  };
-
-  // Export handler
-  const handleExport = async () => {
-    try {
-      const params = {
-        export: exportFormat,
-      };
-
-      if (filterProgram !== "all") {
-        params.program_id = filterProgram;
-      }
-
-      const response = await api.get("/exams/admin/procedures/", {
-        params,
-        responseType: "blob",
-      });
-
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement("a");
-      link.href = url;
-
-      const extension = exportFormat === "excel" ? "xlsx" : exportFormat;
-      const filename =
-        exportFormat === "excel"
-          ? "procedures_and_steps"
-          : "procedures_and_steps";
-      link.setAttribute("download", `${filename}.${extension}`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-
-      toast.success(`Procedures exported successfully`);
-    } catch (err) {
-      console.error(err);
-      toast.error("Export failed");
-    }
-  };
-
-  // Download template
-  const handleDownloadTemplate = async () => {
-    try {
-      const response = await api.get("/exams/procedures/template/", {
-        responseType: "blob",
-      });
-
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", "procedures_import_template.xlsx");
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-
-      toast.success("Template downloaded successfully");
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to download template");
-    }
-  };
-
-  // Import handlers
-  const handleFileSelect = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setImportFile(file);
-      setImportDialog(true);
-    }
-  };
-
-  const handleImportSubmit = async () => {
-    if (!importFile) {
-      toast.error("Please select a file");
-      return;
-    }
-
-    setImporting(true);
-    setImportResult(null);
-
-    try {
-      const formData = new FormData();
-      formData.append("file", importFile);
-
-      const response = await api.post("/exams/procedures/import/", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
-
-      setImportResult(response.data);
-
-      if (response.data.errors === 0) {
-        toast.success(
-          `Import successful! Procedures: ${response.data.procedures_created} created, ` +
-            `${response.data.procedures_updated} updated. Steps: ${response.data.steps_created} created, ` +
-            `${response.data.steps_updated} updated.`,
-        );
-        setTimeout(() => {
-          setImportDialog(false);
-          setImportFile(null);
-          setImportResult(null);
-          fetchData();
-        }, 3000);
+      const params = buildFilterParams();
+      params.set("page", String(page));
+      params.set("page_size", String(pageSize));
+      const res = await api.get(`/exams/admin/procedures/?${params}`);
+      if (res.data?.results !== undefined) {
+        setProcedures(res.data.results);
+        setTotalCount(res.data.count ?? res.data.results.length);
       } else {
-        toast.warning(`Import completed with ${response.data.errors} errors`);
+        const arr = Array.isArray(res.data) ? res.data : [];
+        setProcedures(arr);
+        setTotalCount(arr.length);
       }
-    } catch (err) {
-      console.error(err);
-      toast.error(err.response?.data?.error || "Import failed");
-    } finally {
-      setImporting(false);
+    } catch { toast.error("Failed to load procedures"); }
+    finally { setFetching(false); }
+  }, [page, pageSize, buildFilterParams]);
+
+  useEffect(() => { if (!supportLoading) fetchProcedures(); }, [fetchProcedures, supportLoading]);
+
+  // Selection helpers
+  const clearSelection = () => { setSelectedIds(new Set()); setSelectAllMode(false); };
+  const pageIds = procedures.map((p) => p.id);
+  const isRowChecked = (id) => selectAllMode || selectedIds.has(id);
+  const allOnPageChecked = procedures.length > 0 && pageIds.every((id) => isRowChecked(id));
+  const someOnPageChecked = !selectAllMode && pageIds.some((id) => selectedIds.has(id)) && !pageIds.every((id) => selectedIds.has(id));
+  const logicalCount = selectAllMode ? totalCount : selectedIds.size;
+  const showSelectAllBanner = !selectAllMode && allOnPageChecked && selectedIds.size > 0 && totalCount > pageSize;
+
+  const handleHeaderCheckbox = (checked) => {
+    if (selectAllMode) { clearSelection(); return; }
+    if (checked) {
+      setSelectedIds((prev) => { const next = new Set(prev); pageIds.forEach((id) => next.add(id)); return next; });
+    } else {
+      setSelectedIds((prev) => { const next = new Set(prev); pageIds.forEach((id) => next.delete(id)); return next; });
     }
   };
 
+  const handleRowCheckbox = (id, checked) => {
+    if (selectAllMode) { setSelectAllMode(false); setSelectedIds(new Set(pageIds.filter((pid) => pid !== id))); return; }
+    setSelectedIds((prev) => { const next = new Set(prev); checked ? next.add(id) : next.delete(id); return next; });
+  };
+
+  // Navigate to steps page when row is clicked
+  const goToSteps = (proc) => router.push(`/admin/procedures/${proc.id}/steps`);
+
+  // CRUD
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
-
     try {
+      const payload = { name: formData.name, program_id: parseInt(formData.program_id), total_score: parseInt(formData.total_score) };
       if (editingProcedure) {
-        await api.patch(
-          `/exams/admin/procedures/${editingProcedure.id}/`,
-          formData,
-        );
-        toast.success("Procedure updated successfully");
+        await api.patch(`/exams/admin/procedures/${editingProcedure.id}/`, payload);
+        toast.success("Procedure updated");
       } else {
-        await api.post("/exams/admin/procedures/", formData);
-        toast.success("Procedure created successfully");
+        await api.post("/exams/admin/procedures/", payload);
+        toast.success("Procedure created");
       }
       setDialogOpen(false);
       resetForm();
-      fetchData();
-    } catch (err) {
-      console.error(err);
-      toast.error("Operation failed");
-    } finally {
-      setSubmitting(false);
-    }
+      fetchProcedures();
+    } catch { toast.error("Operation failed"); }
+    finally { setSubmitting(false); }
   };
 
-  const handleEdit = (procedure) => {
-    setEditingProcedure(procedure);
-    setFormData({
-      name: procedure.name,
-      program_id: procedure.program_id, // Now using program_id from serializer
-      total_score: procedure.total_score,
-    });
+  const handleEdit = (proc, e) => {
+    e.stopPropagation();
+    setEditingProcedure(proc);
+    setFormData({ name: proc.name, program_id: String(proc.program_id), total_score: String(proc.total_score) });
     setDialogOpen(true);
   };
 
   const handleDelete = async () => {
     try {
       await api.delete(`/exams/admin/procedures/${deleteDialog.id}/`);
-      toast.success("Procedure deleted successfully");
+      toast.success("Procedure deleted");
       setDeleteDialog({ open: false, id: null });
-      fetchData();
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to delete procedure");
-    }
+      setSelectedIds((prev) => { const next = new Set(prev); next.delete(deleteDialog.id); return next; });
+      fetchProcedures();
+    } catch { toast.error("Failed to delete. It may have related records."); }
   };
 
-    const handleBulkDelete = async () => {
+  const handleBulkDelete = async () => {
+    setBulkDeleting(true);
     try {
-      await api.post("/exams/procedures/bulk-delete/", {
-        procedure_ids: selectedProcedures,
-      });
-      toast.success(
-        `Successfully deleted ${selectedProcedures.length} procedure(s)`,
-      );
+      let idsToDelete;
+      if (selectAllMode) {
+        toast.info("Fetching all matching procedure IDs…");
+        const params = buildFilterParams();
+        params.set("page_size", "5000");
+        let allIds = [], currentPage = 1, hasMore = true;
+        while (hasMore) {
+          params.set("page", String(currentPage));
+          const res = await api.get(`/exams/admin/procedures/?${params}`);
+          const results = res.data?.results ?? (Array.isArray(res.data) ? res.data : []);
+          allIds = allIds.concat(results.map((p) => p.id));
+          hasMore = Boolean(res.data?.next) && results.length > 0;
+          currentPage++;
+        }
+        idsToDelete = allIds;
+      } else {
+        idsToDelete = [...selectedIds];
+      }
+      if (!idsToDelete.length) { toast.error("No procedures to delete"); return; }
+      await api.post("/exams/procedures/bulk-delete/", { procedure_ids: idsToDelete });
+      toast.success(`Deleted ${idsToDelete.length.toLocaleString()} procedure(s)`);
       setBulkDeleteDialog(false);
-      setSelectedProcedures([]);
-      fetchData();
-    } catch (err) {
-      console.error(err);
-      toast.error(err.response?.data?.error || "Failed to delete procedures");
-    }
+      clearSelection();
+      fetchProcedures();
+    } catch (err) { toast.error(err.response?.data?.error || "Bulk delete failed"); }
+    finally { setBulkDeleting(false); }
   };
 
-  const resetForm = () => {
-    setFormData({
-      name: "",
-      program_id: "",
-      total_score: "",
-    });
-    setEditingProcedure(null);
+  const resetForm = () => { setFormData(EMPTY_FORM); setEditingProcedure(null); };
+
+  const handleExport = async (format) => {
+    try {
+      const params = buildFilterParams();
+      params.set("export", format);
+      const res = await api.get(`/exams/admin/procedures/?${params}`, { responseType: "blob" });
+      const ext = format === "excel" ? "xlsx" : format;
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement("a"); a.href = url; a.download = `procedures.${ext}`; a.click();
+      URL.revokeObjectURL(url);
+    } catch { toast.error("Export failed"); }
   };
 
-  const handleSelectAll = (checked) => {
-    if (checked) {
-      setSelectedProcedures(filteredProcedures.map((p) => p.id));
-    } else {
-      setSelectedProcedures([]);
-    }
+  const handleImport = async () => {
+    if (!importFile) return;
+    setImporting(true);
+    try {
+      const fd = new FormData(); fd.append("file", importFile);
+      const res = await api.post("/exams/procedures/import/", fd, { headers: { "Content-Type": "multipart/form-data" } });
+      const d = res.data;
+      toast.success(`Imported: ${d.procedures_created} created, ${d.procedures_updated} updated`);
+      if (d.error_details?.length) d.error_details.forEach((e) => toast.warning(e));
+      setImportDialog(false); setImportFile(null); fetchProcedures();
+    } catch { toast.error("Import failed"); }
+    finally { setImporting(false); }
   };
 
-  const handleSelectProcedure = (procedureId, checked) => {
-    if (checked) {
-      setSelectedProcedures([...selectedProcedures, procedureId]);
-    } else {
-      setSelectedProcedures(
-        selectedProcedures.filter((id) => id !== procedureId),
-      );
-    }
+  const handleDownloadTemplate = async () => {
+    try {
+      const res = await api.get("/exams/procedures/template/", { responseType: "blob" });
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement("a"); a.href = url; a.download = "procedures_import_template.xlsx"; a.click();
+      URL.revokeObjectURL(url);
+    } catch { toast.error("Failed to download template"); }
   };
 
-  const filteredProcedures = procedures.filter((procedure) => {
-    const matchesSearch = procedure.name
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase());
-    const matchesProgram =
-      filterProgram === "all" ||
-      procedure.program_id === parseInt(filterProgram);
-    return matchesSearch && matchesProgram;
-  });
+  const totalPages  = Math.max(1, Math.ceil(totalCount / pageSize));
+  const showingFrom = totalCount === 0 ? 0 : (page - 1) * pageSize + 1;
+  const showingTo   = Math.min(page * pageSize, totalCount);
+  const pagePills   = (() => {
+    const start = Math.max(1, Math.min(page - 2, totalPages - 4));
+    const end   = Math.min(totalPages, start + 4);
+    return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+  })();
 
-  const allSelected =
-    filteredProcedures.length > 0 &&
-    selectedProcedures.length === filteredProcedures.length;
-  const someSelected = selectedProcedures.length > 0 && !allSelected;
-
-  if (loading) {
-    return <DashboardSkeleton showStats={false} />;
-  }
+  if (supportLoading) return <DashboardSkeleton showStats={false} />;
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between gap-2">
+      <div className="flex flex-col md:flex-row justify-between gap-3">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Procedures</h2>
-          <p className="text-muted-foreground">
-            Manage assessment procedures and their steps
-          </p>
+          <p className="text-muted-foreground">Manage assessment procedures — click a row to view its steps</p>
         </div>
-
         <div className="flex flex-wrap items-center gap-2">
-          {/* Export Dropdown */}
-          <Select value={exportFormat} onValueChange={setExportFormat}>
-            <SelectTrigger className="w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="csv">CSV</SelectItem>
-              <SelectItem value="excel">Excel</SelectItem>
-              <SelectItem value="pdf">PDF</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Button variant="outline" onClick={handleExport}>
-            <Download className="mr-2 h-4 w-4" />
-            Export
-          </Button>
-
-          <Button variant="outline" onClick={handleDownloadTemplate}>
-            <FileDown className="mr-2 h-4 w-4" />
-            Template
-          </Button>
-
-          <label htmlFor="import-file">
-            <Button variant="outline" asChild>
-              <span>
-                <Upload className="mr-2 h-4 w-4" />
-                Import
-              </span>
+          {logicalCount > 0 && (
+            <Button variant="destructive" size="sm" onClick={() => setBulkDeleteDialog(true)}>
+              <Trash2 className="mr-1.5 h-4 w-4" /> Delete ({logicalCount.toLocaleString()})
             </Button>
-          </label>
-          <input
-            id="import-file"
-            type="file"
-            accept=".xlsx,.xls,.csv"
-            className="hidden"
-            onChange={handleFileSelect}
-          />
-
-          <Button
-            onClick={() => {
-              resetForm();
-              setDialogOpen(true);
-            }}
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Add Procedure
+          )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm"><Download className="mr-1.5 h-4 w-4" />Export<ChevronDown className="ml-1 h-3.5 w-3.5 opacity-60" /></Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleExport("csv")}><FileText className="mr-2 h-4 w-4" />CSV</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport("excel")}><FileText className="mr-2 h-4 w-4" />Excel</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport("pdf")}><FileText className="mr-2 h-4 w-4" />PDF</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm"><Upload className="mr-1.5 h-4 w-4" />Import<ChevronDown className="ml-1 h-3.5 w-3.5 opacity-60" /></Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setImportDialog(true)}><Upload className="mr-2 h-4 w-4" />Upload file</DropdownMenuItem>
+              <DropdownMenuItem onClick={handleDownloadTemplate}><Download className="mr-2 h-4 w-4" />Download template</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button size="sm" onClick={() => { resetForm(); setDialogOpen(true); }}>
+            <Plus className="mr-1.5 h-4 w-4" />Add Procedure
           </Button>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col md:flex-row items-center gap-2">
-        <div className="relative flex-1 w-full md:w-64">
+      <div className="flex flex-wrap gap-2 items-center">
+        <div className="relative flex-1 min-w-[200px] max-w-sm">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search procedures..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-8"
-          />
+          <Input placeholder="Search procedures..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-8" />
         </div>
-        <div className="flex flex-col md:flex-row gap-2 max-w-sm">
-          <Select value={filterProgram} onValueChange={setFilterProgram}>
-            <SelectTrigger className="w-64">
-              <SelectValue placeholder="Filter by program" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Programs</SelectItem>
-              {programs.map((program) => (
-                <SelectItem key={program.id} value={program.id.toString()}>
-                  {program.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-           {selectedProcedures.length > 0 && (
-          <Button
-            variant="destructive"
-            onClick={() => setBulkDeleteDialog(true)}
-          >
-            <Trash2 className="mr-2 h-4 w-4" />
-            Delete Selected ({selectedProcedures.length})
-          </Button>
-        )}
-        </div>
+        <Select value={programFilter} onValueChange={setProgramFilter}>
+          <SelectTrigger className="w-[220px]"><SelectValue placeholder="All Programs" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Programs</SelectItem>
+            {programs.map((p) => <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={String(pageSize)} onValueChange={(v) => setPageSize(Number(v))}>
+          <SelectTrigger className="w-[110px]"><SelectValue /></SelectTrigger>
+          <SelectContent>{PAGE_SIZES.map((s) => <SelectItem key={s} value={String(s)}>{s} / page</SelectItem>)}</SelectContent>
+        </Select>
       </div>
+
+      {/* Select-all offer banner */}
+      {showSelectAllBanner && (
+        <div className="flex items-center justify-between gap-3 px-4 py-2.5 rounded-lg bg-primary/5 border border-primary/20 text-sm">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Layers className="h-4 w-4 text-primary shrink-0" />
+            All <strong className="text-foreground">{selectedIds.size}</strong> procedures on this page are selected.
+          </div>
+          <Button size="sm" variant="outline" className="shrink-0 border-primary/40 text-primary hover:bg-primary/10" onClick={() => setSelectAllMode(true)}>
+            Select all <strong className="ml-1">{totalCount.toLocaleString()}</strong> procedures
+          </Button>
+        </div>
+      )}
+
+      {/* All-selected banner */}
+      {selectAllMode && (
+        <div className="flex items-center justify-between gap-3 px-4 py-2.5 rounded-lg bg-primary/5 border border-primary/20 text-sm">
+          <div className="flex items-center gap-2">
+            <Layers className="h-4 w-4 text-primary shrink-0" />
+            All <strong>{totalCount.toLocaleString()}</strong> procedures matching the current filters are selected.
+          </div>
+          <Button size="sm" variant="ghost" className="shrink-0 text-muted-foreground" onClick={clearSelection}>Clear selection</Button>
+        </div>
+      )}
 
       {/* Table */}
       <Card>
-        <CardHeader>
-          <CardTitle>All Procedures ({filteredProcedures.length})
-            {selectedProcedures.length > 0 && (
-              <span className="ml-2 text-sm font-normal text-muted-foreground">
-                • {selectedProcedures.length} selected
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center justify-between text-base">
+            <span>{fetching ? "Loading…" : `${showingFrom}–${showingTo} of ${totalCount} procedures`}</span>
+            {logicalCount > 0 && (
+              <span className="text-sm font-normal text-muted-foreground">
+                {logicalCount.toLocaleString()} selected
+                <button className="ml-2 underline text-xs" onClick={clearSelection}>Clear</button>
               </span>
             )}
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-12">
+                <TableHead className="w-10 pl-4">
                   <Checkbox
-                    checked={allSelected}
-                    onCheckedChange={handleSelectAll}
-                    aria-label="Select all"
-                    className={someSelected ? "opacity-50" : ""}
+                    checked={selectAllMode || allOnPageChecked}
+                    ref={(el) => { if (el) el.indeterminate = someOnPageChecked; }}
+                    onCheckedChange={handleHeaderCheckbox}
+                    aria-label="Select all on this page"
                   />
                 </TableHead>
-                <TableHead className="min-w-[12rem] max-w-xs truncate lg:truncate">
-                  Procedure Name
-                </TableHead>
+                <TableHead>Procedure Name</TableHead>
                 <TableHead>Program</TableHead>
-                <TableHead>Total Score</TableHead>
-                <TableHead>Steps</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="text-center">Total Score</TableHead>
+                <TableHead className="text-center">Steps</TableHead>
+                <TableHead className="text-right pr-4">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredProcedures.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center py-6">
-                    No procedures found
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredProcedures.map((procedure) => (
-                  <TableRow key={procedure.id}>
-                    <TableCell>
-                      <Checkbox
-                        checked={selectedProcedures.includes(procedure.id)}
-                        onCheckedChange={(checked) =>
-                          handleSelectProcedure(procedure.id, checked)
-                        }
-                        aria-label={`Select ${procedure.name}`}
-                      />
-                    </TableCell>
-                    <TableCell
-                      className="uppercase font-medium min-w-[12rem] max-w-xs truncate lg:truncate cursor-pointer"
-                      title={procedure.name}
-                    >
-                      {procedure.name}
-                    </TableCell>
-                    <TableCell>{procedure.program}</TableCell>
-                    <TableCell>{procedure.total_score}</TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">
-                        {procedure.step_count || 0} steps
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Link href={`/admin/procedures/${procedure.id}/steps`}>
-                          <Button variant="ghost" size="sm">
-                            <ListOrdered className="h-4 w-4" />
-                          </Button>
-                        </Link>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEdit(procedure)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() =>
-                            setDeleteDialog({ open: true, id: procedure.id })
-                          }
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
+              {fetching ? (
+                Array.from({ length: 8 }).map((_, i) => (
+                  <TableRow key={i}>{Array.from({ length: 6 }).map((__, j) => <TableCell key={j}><div className="h-4 bg-muted animate-pulse rounded" /></TableCell>)}</TableRow>
                 ))
+              ) : procedures.length === 0 ? (
+                <TableRow><TableCell colSpan={6} className="text-center py-10 text-muted-foreground">No procedures found</TableCell></TableRow>
+              ) : (
+                procedures.map((proc) => {
+                  const checked = isRowChecked(proc.id);
+                  return (
+                    <TableRow
+                      key={proc.id}
+                      data-state={checked ? "selected" : undefined}
+                      className={`cursor-pointer hover:bg-muted/50 transition-colors ${checked ? "bg-muted/40" : ""}`}
+                      onClick={() => goToSteps(proc)}
+                    >
+                      <TableCell className="pl-4" onClick={(e) => e.stopPropagation()}>
+                        <Checkbox checked={checked} onCheckedChange={(c) => handleRowCheckbox(proc.id, c)} aria-label={`Select ${proc.name}`} />
+                      </TableCell>
+                      <TableCell title={proc.name}>
+                        <div className="flex items-center gap-1.5">
+                          <span className="max-w-[250px] truncate font-medium">{proc.name}</span>
+                          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/50" />
+                        </div>
+                      </TableCell>
+                      <TableCell>{proc.program}</TableCell>
+                      <TableCell className="text-center"><Badge variant="secondary">{proc.total_score} pts</Badge></TableCell>
+                      <TableCell className="text-center">
+                        <Badge>{proc.step_count ?? 0} step{proc.step_count !== 1 ? "s" : ""}</Badge>
+                      </TableCell>
+                      <TableCell className="text-right pr-4" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-end gap-1">
+                          <Button variant="ghost" size="icon" title="View steps" onClick={() => goToSteps(proc)}>
+                            <Layers className="h-4 w-4 text-primary" />
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={(e) => handleEdit(proc, e)}>
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setDeleteDialog({ open: true, id: proc.id }); }}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
 
+      {/* Pagination */}
+      {!fetching && totalCount > 0 && (
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <p className="text-sm text-muted-foreground">Page {page} of {totalPages} &middot; {totalCount} total procedures</p>
+          <div className="flex items-center gap-1">
+            <Button variant="outline" size="icon" disabled={page <= 1} onClick={() => setPage(1)} title="First"><ChevronsLeft className="h-4 w-4" /></Button>
+            <Button variant="outline" size="icon" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}><ChevronLeft className="h-4 w-4" /></Button>
+            {pagePills.map((n) => <Button key={n} variant={n === page ? "default" : "outline"} size="icon" className="w-8 h-8 text-xs" onClick={() => setPage(n)}>{n}</Button>)}
+            <Button variant="outline" size="icon" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}><ChevronRight className="h-4 w-4" /></Button>
+            <Button variant="outline" size="icon" disabled={page >= totalPages} onClick={() => setPage(totalPages)} title="Last"><ChevronsRight className="h-4 w-4" /></Button>
+          </div>
+        </div>
+      )}
+
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>
-              {editingProcedure ? "Edit Procedure" : "Add New Procedure"}
-            </DialogTitle>
-            <DialogDescription>
-              {editingProcedure
-                ? "Update procedure information"
-                : "Create a new assessment procedure"}
-            </DialogDescription>
+            <DialogTitle>{editingProcedure ? "Edit Procedure" : "Add New Procedure"}</DialogTitle>
+            <DialogDescription>{editingProcedure ? "Update procedure information" : "Create a new assessment procedure"}</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Procedure Name</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
-                required
-              />
+              <Label htmlFor="proc-name">Procedure Name</Label>
+              <Input id="proc-name" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} placeholder="e.g., IV Catheter Insertion" required />
             </div>
-
             <div className="space-y-2">
-              <Label htmlFor="program">Program</Label>
-              <Select
-                value={formData.program_id.toString()}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, program_id: parseInt(value) })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select program" />
-                </SelectTrigger>
-                <SelectContent>
-                  {programs.map((program) => (
-                    <SelectItem key={program.id} value={program.id.toString()}>
-                      {program.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
+              <Label>Program</Label>
+              <Select value={formData.program_id} onValueChange={(v) => setFormData({ ...formData, program_id: v })}>
+                <SelectTrigger><SelectValue placeholder="Select a program" /></SelectTrigger>
+                <SelectContent>{programs.map((p) => <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-
             <div className="space-y-2">
-              <Label htmlFor="total_score">Total Score</Label>
-              <Input
-                id="total_score"
-                type="number"
-                value={formData.total_score}
-                onChange={(e) =>
-                  setFormData({ ...formData, total_score: e.target.value })
-                }
-                required
-              />
+              <Label htmlFor="proc-score">Total Score</Label>
+              <Input id="proc-score" type="number" min={1} value={formData.total_score} onChange={(e) => setFormData({ ...formData, total_score: e.target.value })} placeholder="e.g., 20" required />
             </div>
-
             <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setDialogOpen(false);
-                  resetForm();
-                }}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={submitting}>
-                {submitting
-                  ? "Saving..."
-                  : editingProcedure
-                    ? "Update Procedure"
-                    : "Create Procedure"}
-              </Button>
+              <Button type="button" variant="outline" onClick={() => { setDialogOpen(false); resetForm(); }}>Cancel</Button>
+              <Button type="submit" disabled={submitting || !formData.program_id}>{submitting ? "Saving…" : editingProcedure ? "Update" : "Create"}</Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
 
-      {/* Import Dialog */}
-      <Dialog open={importDialog} onOpenChange={setImportDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Import Procedures</DialogTitle>
-            <DialogDescription>
-              Upload an Excel or CSV file with procedures and steps
-            </DialogDescription>
-          </DialogHeader>
-
-          {importFile && (
-            <div className="py-4">
-              <p className="text-sm text-muted-foreground mb-2">
-                Selected file:{" "}
-                <span className="font-medium">{importFile.name}</span>
-              </p>
-
-              {importResult && (
-                <div className="mt-4 p-4 bg-muted rounded-lg">
-                  <h4 className="font-semibold mb-2">Import Results:</h4>
-                  <ul className="text-sm space-y-1">
-                    <li>
-                      Procedures created: {importResult.procedures_created}
-                    </li>
-                    <li>
-                      Procedures updated: {importResult.procedures_updated}
-                    </li>
-                    <li>Steps created: {importResult.steps_created}</li>
-                    <li>Steps updated: {importResult.steps_updated}</li>
-                    <li className="text-destructive">
-                      Errors: {importResult.errors}
-                    </li>
-                  </ul>
-
-                  {importResult.error_details &&
-                    importResult.error_details.length > 0 && (
-                      <div className="mt-3">
-                        <h5 className="font-medium text-sm mb-1">
-                          Error Details:
-                        </h5>
-                        <ul className="text-xs space-y-1 text-destructive max-h-40 overflow-y-auto">
-                          {importResult.error_details.map((error, idx) => (
-                            <li key={idx}>{error}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                </div>
-              )}
-            </div>
-          )}
-
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setImportDialog(false);
-                setImportFile(null);
-                setImportResult(null);
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleImportSubmit}
-              disabled={importing || !importFile}
-            >
-              {importing ? "Importing..." : "Import"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete Dialog */}
-      <AlertDialog
-        open={deleteDialog.open}
-        onOpenChange={(open) => setDeleteDialog({ ...deleteDialog, open })}
-      >
+      {/* Single delete */}
+      <AlertDialog open={deleteDialog.open} onOpenChange={(open) => setDeleteDialog({ ...deleteDialog, open })}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete the procedure and all its steps. This
-              action cannot be undone.
-            </AlertDialogDescription>
+            <AlertDialogTitle>Delete this procedure?</AlertDialogTitle>
+            <AlertDialogDescription>All steps for this procedure will also be deleted. This action cannot be undone.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              className="bg-destructive"
-            >
-              Delete
-            </AlertDialogAction>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Bulk Delete Dialog */}
+      {/* Bulk delete */}
       <AlertDialog open={bulkDeleteDialog} onOpenChange={setBulkDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Multiple Procedures?</AlertDialogTitle>
-            <AlertDialogDescription>
-              You are about to delete {selectedProcedures.length} procedure(s) and all its steps. This
-              action cannot be undone.
+            <AlertDialogTitle>Delete {logicalCount.toLocaleString()} procedure{logicalCount !== 1 ? "s" : ""}?</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>All steps for the selected procedures will be permanently deleted.</p>
+                {selectAllMode && (
+                  <div className="flex items-start gap-2 p-3 rounded-md bg-destructive/10 border border-destructive/20 text-destructive text-sm font-medium">
+                    <span>⚠</span>
+                    <span>You are about to delete <strong>all {totalCount.toLocaleString()} procedures</strong> matching the current filters. This cannot be reversed.</span>
+                  </div>
+                )}
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleBulkDelete}
-              className="bg-destructive"
-            >
-              Delete {selectedProcedures.length} Procedure(s)
+            <AlertDialogCancel disabled={bulkDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBulkDelete} disabled={bulkDeleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {bulkDeleting ? "Deleting…" : `Delete ${logicalCount.toLocaleString()}`}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Import dialog */}
+      <Dialog open={importDialog} onOpenChange={setImportDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Import Procedures</DialogTitle>
+            <DialogDescription>Upload an Excel or CSV file. Use the template for the correct format.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary transition-colors" onClick={() => fileInputRef.current?.click()}>
+              {importFile ? <p className="text-sm font-medium">{importFile.name}</p> : (
+                <>
+                  <Upload className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
+                  <p className="text-sm text-muted-foreground">Click to select or drag & drop</p>
+                  <p className="text-xs text-muted-foreground mt-1">.xlsx, .xls, .csv</p>
+                </>
+              )}
+              <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={(e) => setImportFile(e.target.files?.[0] ?? null)} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setImportDialog(false); setImportFile(null); }}>Cancel</Button>
+            <Button onClick={handleImport} disabled={!importFile || importing}>{importing ? "Importing…" : "Import"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

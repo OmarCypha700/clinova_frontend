@@ -1,18 +1,10 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "@/lib/api";
 import DashboardSkeleton from "@/components/DashboardSkeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Spinner } from "@/components/ui/spinner";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -21,220 +13,214 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  Download,
   Search,
+  Download,
   FileText,
-  FileSpreadsheet,
-  FileDown,
-  ArrowUpDown,
-  ArrowUp,
-  ArrowDown,
-  CheckCircle,
-  XCircle,
+  ChevronDown,
+  ChevronUp,
+  ChevronsUpDown,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { toast } from "sonner";
 
-// // Reconciliation limits per program
-// const PROGRAM_RECONCILIATION_LIMITS = {
-//   "Registered General Nursing": 4,
-//   // RGN: 4,
-//   "Registered Midwifery": 5,
-//   // RM: 5,
-//   "Public Health Nursing": 4,
-// };
+// ─── constants ──────────────────────────────────────────────────────────────
 
-// // Default limit if program not found in config
-// const DEFAULT_RECONCILIATION_LIMIT = 4;
+const GRADE_COLORS = {
+  Distinction: "bg-green-100 text-green-800 border-green-200",
+  Credit: "bg-blue-100 text-blue-800 border-blue-200",
+  Pass: "bg-yellow-100 text-yellow-800 border-yellow-200",
+  Fail: "bg-red-100 text-red-800 border-red-200",
+  "N/A": "bg-gray-100 text-gray-600 border-gray-200",
+};
+
+const PAGE_SIZES = [25, 50, 100, 200];
+
+const SORTABLE_COLS = [
+  { key: "index_number", label: "Index No." },
+  { key: "full_name", label: "Student Name" },
+  { key: "program", label: "Program" },
+  { key: "level", label: "Level" },
+  { key: "percentage", label: "%" },
+  { key: "grade", label: "Grade" },
+];
+
+// ─── helpers ─────────────────────────────────────────────────────────────────
+
+function SortIcon({ col, sortBy, order }) {
+  if (sortBy !== col)
+    return <ChevronsUpDown className="ml-1 h-3.5 w-3.5 opacity-40 inline" />;
+  return order === "asc" ? (
+    <ChevronUp className="ml-1 h-3.5 w-3.5 inline" />
+  ) : (
+    <ChevronDown className="ml-1 h-3.5 w-3.5 inline" />
+  );
+}
+
+// ─── component ───────────────────────────────────────────────────────────────
 
 export default function GradesPage() {
   const [grades, setGrades] = useState([]);
-  // const [filterGrade, setFilterGrade] = useState("all");
   const [programs, setPrograms] = useState([]);
+  const [levels, setLevels] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filterProgram, setFilterProgram] = useState("all");
-  const [filterLevel, setFilterLevel] = useState("all");
+  const [fetching, setFetching] = useState(false);
+
+  // Pagination
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
+  const [totalCount, setTotal] = useState(0);
+
+  // Filters
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDS] = useState("");
+  const [programFilter, setProgram] = useState("all");
+  const [levelFilter, setLevel] = useState("all");
+  const [gradeFilter, setGrade] = useState("all");
+
+  // Sort
   const [sortBy, setSortBy] = useState("index_number");
-  const [sortOrder, setSortOrder] = useState("asc");
-  const [exporting, setExporting] = useState(false);
-  const [debouncedSearch, setDebouncedSearch] = useState(searchQuery);
-  const [initialLoad, setInitialLoad] = useState(true);
-  const today = new Date().toISOString().split("T")[0];
+  const [order, setOrder] = useState("asc");
+
+  // ── debounce search ────────────────────────────────────────────────────────
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(searchQuery);
-    }, 500);
+    const t = setTimeout(() => setDS(search), 350);
+    return () => clearTimeout(t);
+  }, [search]);
 
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
+  // ── fetch support data once ────────────────────────────────────────────────
 
   useEffect(() => {
-    fetchPrograms();
+    Promise.all([api.get("/exams/admin/programs/"), api.get("/exams/levels/")])
+      .then(([pr, lr]) => {
+        setPrograms(pr.data?.results ?? pr.data ?? []);
+        setLevels(lr.data?.results ?? lr.data ?? []);
+      })
+      .catch(() => toast.error("Failed to load filter options"))
+      .finally(() => setLoading(false));
   }, []);
 
-useEffect(() => {
-  fetchGrades();
-}, [
-  filterProgram,
-  filterLevel,
-  // filterGrade,
-  debouncedSearch,
-  sortBy,
-  sortOrder,
-]);
+  // ── fetch grades (server-side) ────────────────────────────────────────────
 
-useEffect(() => {
-  setInitialLoad(false);
-}, []);
-
-// const gradesList = useMemo(() => {
-//   const gradeOrder = ["Distinction", "Credit", "Pass", "Fail"];
-
-//   const uniqueGrades = new Set(
-//     grades.map((g) => g.grade).filter(Boolean)
-//   );
-
-//   return gradeOrder
-//     .filter((grade) => uniqueGrades.has(grade))
-//     .map((grade) => ({
-//       value: grade,
-//       label: grade,
-//     }));
-// }, [grades]);
-
-  const fetchPrograms = async () => {
+  const fetchGrades = useCallback(async () => {
+    setFetching(true);
     try {
-      const res = await api.get("/exams/programs/");
-      setPrograms(res.data);
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to load programs");
-    }
-  };
-
-  const fetchGrades = async () => {
-    try {
-      setLoading(true);
-      const params = {
+      const params = new URLSearchParams({
+        page: String(page),
+        page_size: String(pageSize),
         sort_by: sortBy,
-        order: sortOrder,
-      };
+        order,
+      });
+      if (debouncedSearch) params.set("search", debouncedSearch);
+      if (programFilter !== "all") params.set("program_id", programFilter);
+      if (levelFilter !== "all") params.set("level_id", levelFilter);
 
-      // console.log("Filter params:", params);
+      const res = await api.get(`/exams/grades/?${params}`);
+      let results = res.data?.results ?? res.data ?? [];
 
-      // if (filterGrade !== "all") {
-      //   params.grade = filterGrade;
-      // }
-
-      if (filterProgram !== "all") {
-        params.program_id = filterProgram;
+      // Client-side grade filter (cheap, already paginated)
+      if (gradeFilter !== "all") {
+        results = results.filter((g) => g.grade === gradeFilter);
       }
 
-      if (filterLevel !== "all") {
-        params.level = filterLevel;
-      }
-
-      if (debouncedSearch) {
-        params.search = debouncedSearch;
-      }
-
-      const res = await api.get("/exams/grades/", { params });
-      setGrades(res.data);
-      // console.log("Fetched grades:", res.data);
-      setLoading(false);
-    } catch (err) {
-      console.error(err);
+      setGrades(results);
+      setTotal(res.data?.count ?? results.length);
+    } catch {
       toast.error("Failed to load grades");
-      setLoading(false);
+    } finally {
+      setFetching(false);
     }
-  };
+  }, [
+    page,
+    pageSize,
+    debouncedSearch,
+    programFilter,
+    levelFilter,
+    gradeFilter,
+    sortBy,
+    order,
+  ]);
 
-  // const getReconciliationLimit = (programName) =>
-  //   PROGRAM_RECONCILIATION_LIMITS[programName] ?? DEFAULT_RECONCILIATION_LIMIT;
+  // Reset to page 1 on filter/sort change
+  useEffect(() => {
+    setPage(1);
+  }, [
+    debouncedSearch,
+    programFilter,
+    levelFilter,
+    gradeFilter,
+    pageSize,
+    sortBy,
+    order,
+  ]);
 
-  const handleSort = (column) => {
-    if (sortBy === column) {
-      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+  useEffect(() => {
+    if (!loading) fetchGrades();
+  }, [fetchGrades, loading]);
+
+  // ── sort handler ───────────────────────────────────────────────────────────
+
+  const handleSort = (col) => {
+    if (sortBy === col) {
+      setOrder((o) => (o === "asc" ? "desc" : "asc"));
     } else {
-      setSortBy(column);
-      setSortOrder("asc");
+      setSortBy(col);
+      setOrder("asc");
     }
   };
+
+  // ── export ─────────────────────────────────────────────────────────────────
 
   const handleExport = async (format) => {
-    setExporting(true);
     try {
-      const params = {
-        export: format,
-      };
-
-      // if (filterGrade !== "all") {
-      //   params.grade = filterGrade;
-      // }
-
-      if (filterProgram !== "all") {
-        params.program_id = filterProgram;
-      }
-
-      if (filterLevel !== "all") {
-        params.level = filterLevel;
-      }
-
-      if (debouncedSearch) {
-        params.search = debouncedSearch;
-      }
-
-      const response = await api.get("/exams/grades/", {
-        params,
+      const params = new URLSearchParams({ export: format });
+      if (debouncedSearch) params.set("search", debouncedSearch);
+      if (programFilter !== "all") params.set("program_id", programFilter);
+      if (levelFilter !== "all") params.set("level_id", levelFilter);
+      const res = await api.get(`/exams/grades/?${params}`, {
         responseType: "blob",
       });
-
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement("a");
-      link.href = url;
-
-      const extension = format === "excel" ? "xlsx" : format;
-      link.setAttribute("download", `student_grades_${today}.${extension}`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-
-      toast.success(`Grades exported successfully as ${format.toUpperCase()}`);
-    } catch (err) {
-      console.error(err);
+      const ext = format === "excel" ? "xlsx" : format;
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `student_grades.${ext}`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
       toast.error("Export failed");
-    } finally {
-      setExporting(false);
     }
   };
 
-  const getGradeBadgeColor = (grade) => {
-    if (grade === "N/A") return "bg-gray-500";
-    if (grade === "Distinction") return "bg-green-500";
-    if (grade === "Credit") return "bg-blue-500";
-    if (grade === "Pass") return "bg-yellow-500";
-    if (grade === "Fail") return "bg-red-500";
-  };
+  // ── pagination ─────────────────────────────────────────────────────────────
 
-  const SortIcon = ({ column }) => {
-    if (sortBy !== column) {
-      return <ArrowUpDown className="h-4 w-4 ml-1 inline" />;
-    }
-    return sortOrder === "asc" ? (
-      <ArrowUp className="h-4 w-4 ml-1 inline" />
-    ) : (
-      <ArrowDown className="h-4 w-4 ml-1 inline" />
-    );
-  };
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  const showingFrom = totalCount === 0 ? 0 : (page - 1) * pageSize + 1;
+  const showingTo = Math.min(page * pageSize, totalCount);
+
+  // ── summary stats ──────────────────────────────────────────────────────────
 
   // Calculate statistics
   const stats = useMemo(
     () => ({
-      total: grades.length,
+      total: totalCount,
       completed: grades.filter((g) => g.grade !== "N/A").length,
       averagePercentage:
         grades.length > 0
@@ -247,46 +233,50 @@ useEffect(() => {
     [grades],
   );
 
-  if (initialLoad) {
-    return <DashboardSkeleton statsCount={4} />;
-  }
+  const GradeStats = useMemo(() => {
+    if (!grades.length) return null;
+    const counted = grades.reduce((acc, g) => {
+      acc[g.grade] = (acc[g.grade] || 0) + 1;
+      return acc;
+    }, {});
+    return counted;
+  }, [grades]);
+
+  // ─────────────────────────────────────────────────────────────────────────
+
+  if (loading) return <DashboardSkeleton showStats={false} />;
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between gap-2">
+      <div className="flex flex-col md:flex-row justify-between gap-3">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Student Grades</h2>
           <p className="text-muted-foreground">
-            View and export student performance data
+            View and export assessment results across all students
           </p>
         </div>
-        <div className="flex flex-wrap md:flex-nowrap items-center gap-2">
-          <Button
-            variant="outline"
-            onClick={() => handleExport("csv")}
-            disabled={exporting}
-          >
-            <FileText className="mr-2 h-4 w-4" />
-            Export CSV
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => handleExport("excel")}
-            disabled={exporting}
-          >
-            <FileSpreadsheet className="mr-2 h-4 w-4" />
-            Export Excel
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => handleExport("pdf")}
-            disabled={exporting}
-          >
-            <FileDown className="mr-2 h-4 w-4" />
-            Export PDF
-          </Button>
-        </div>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm">
+              <Download className="mr-1.5 h-4 w-4" />
+              Export
+              <ChevronDown className="ml-1 h-3.5 w-3.5 opacity-60" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => handleExport("csv")}>
+              <FileText className="mr-2 h-4 w-4" /> CSV
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleExport("excel")}>
+              <FileText className="mr-2 h-4 w-4" /> Excel
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleExport("pdf")}>
+              <FileText className="mr-2 h-4 w-4" /> PDF
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Statistics Cards */}
@@ -344,214 +334,187 @@ useEffect(() => {
         </Card>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-col md:flex-row gap-2">
-        <div className="relative flex-1 max-w-sm">
+      {/* Filters row */}
+      <div className="flex flex-wrap gap-2 items-center">
+        <div className="relative flex-1 min-w-[200px] max-w-xs">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search by name or index..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search name or index..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
             className="pl-8"
           />
         </div>
-        <div className="flex flex-col md:flex-row gap-2 max-w-sm">
-          <Select value={filterProgram} onValueChange={setFilterProgram}>
-            <SelectTrigger className="w-64">
-              <SelectValue placeholder="Filter by program" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Programs</SelectItem>
-              {programs.map((program) => (
-                <SelectItem key={program.id} value={program.id.toString()}>
-                  {program.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
 
-          <Select value={filterLevel} onValueChange={setFilterLevel}>
-            <SelectTrigger className="w-40">
-              <SelectValue placeholder="Filter by level" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Levels</SelectItem>
-              <SelectItem value="100">Level 100</SelectItem>
-              <SelectItem value="200">Level 200</SelectItem>
-              <SelectItem value="300">Level 300</SelectItem>
-              <SelectItem value="400">Level 400</SelectItem>
-            </SelectContent>
-          </Select>
+        <Select value={programFilter} onValueChange={setProgram}>
+          <SelectTrigger className="w-[200px]">
+            <SelectValue placeholder="All Programs" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Programs</SelectItem>
+            {programs.map((p) => (
+              <SelectItem key={p.id} value={String(p.id)}>
+                {p.abbreviation ?? p.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-          {/* <Select value={filterGrade} onValueChange={setFilterGrade}>
-            <SelectTrigger className="w-40">
-              <SelectValue placeholder="Filter by grade" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Grades</SelectItem>
-              {gradesList.map((grade) => (
-                <SelectItem key={grade.value} value={grade.value.toString()}>
-                  {grade.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select> */}
-        </div>
+        <Select value={levelFilter} onValueChange={setLevel}>
+          <SelectTrigger className="w-[150px]">
+            <SelectValue placeholder="All Levels" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Levels</SelectItem>
+            {levels.map((l) => (
+              <SelectItem key={l.id} value={String(l.id)}>
+                {l.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={gradeFilter} onValueChange={setGrade}>
+          <SelectTrigger className="w-[150px]">
+            <SelectValue placeholder="All Grades" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Grades</SelectItem>
+            {["Distinction", "Credit", "Pass", "Fail", "N/A"].map((g) => (
+              <SelectItem key={g} value={g}>
+                {g}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select
+          value={String(pageSize)}
+          onValueChange={(v) => setPageSize(Number(v))}
+        >
+          <SelectTrigger className="w-[100px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {PAGE_SIZES.map((s) => (
+              <SelectItem key={s} value={String(s)}>
+                {s} / page
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
+
+      {/* Grade distribution badges */}
+      {GradeStats && (
+        <div className="flex flex-wrap gap-2">
+          {Object.entries(GradeStats).map(([grade, count]) => (
+            <span
+              key={grade}
+              className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium border ${GRADE_COLORS[grade] ?? GRADE_COLORS["N/A"]}`}
+            >
+              {grade}: {count}
+            </span>
+          ))}
+        </div>
+      )}
 
       {/* Table */}
       <Card>
-        <CardHeader>
-          <CardTitle>
-            Student Grades ({grades.length})
-            {loading && (
-              <span className="text-sm font-normal text-muted-foreground ml-2">
-                <Spinner className="inline" /> Loading...
-              </span>
-            )}
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center justify-between text-base">
+            <span>
+              {fetching
+                ? "Loading…"
+                : `${showingFrom}–${showingTo} of ${totalCount} students`}
+            </span>
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="rounded-md border overflow-x-auto overflow-y-auto max-h-[70vh]">
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead
-                    className="cursor-pointer hover:bg-muted"
-                    onClick={() => handleSort("index_number")}
-                  >
-                    Index Number
-                    <SortIcon column="index_number" />
-                  </TableHead>
-                  <TableHead
-                    className="cursor-pointer hover:bg-muted"
-                    onClick={() => handleSort("full_name")}
-                  >
-                    Full Name
-                    <SortIcon column="full_name" />
-                  </TableHead>
-                  <TableHead
-                    className="cursor-pointer hover:bg-muted"
-                    onClick={() => handleSort("program_name")}
-                  >
-                    Program
-                    <SortIcon column="program_name" />
-                  </TableHead>
-                  <TableHead className="text-center">Level</TableHead>
-                  <TableHead className="text-center">Procedures</TableHead>
-                  <TableHead className="text-center">Care Plan</TableHead>
-                  <TableHead
-                    className="cursor-pointer hover:bg-muted text-center"
-                    onClick={() => handleSort("total_score")}
-                  >
-                    Total Score
-                    <SortIcon column="total_score" />
-                  </TableHead>
-                  <TableHead
-                    className="cursor-pointer hover:bg-muted text-center"
-                    onClick={() => handleSort("percentage")}
-                  >
-                    Percentage
-                    <SortIcon column="percentage" />
-                  </TableHead>
-                  <TableHead
-                    className="cursor-pointer hover:bg-muted text-center"
-                    onClick={() => handleSort("grade")}
-                  >
-                    Grade
-                    <SortIcon column="grade" />
-                  </TableHead>
-                  {/* <TableHead className="text-center">Status</TableHead> */}
+                  {SORTABLE_COLS.map(({ key, label }) => (
+                    <TableHead
+                      key={key}
+                      className="cursor-pointer select-none whitespace-nowrap"
+                      onClick={() => handleSort(key)}
+                    >
+                      {label}
+                      <SortIcon col={key} sortBy={sortBy} order={order} />
+                    </TableHead>
+                  ))}
+                  <TableHead>Proc. Score</TableHead>
+                  <TableHead>Care Plan</TableHead>
+                  <TableHead>Total</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {grades.length === 0 ? (
+                {fetching ? (
+                  Array.from({ length: 6 }).map((_, i) => (
+                    <TableRow key={i}>
+                      {Array.from({ length: 9 }).map((__, j) => (
+                        <TableCell key={j}>
+                          <div className="h-4 bg-muted animate-pulse rounded" />
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                ) : grades.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-6">
-                      No grades found
+                    <TableCell
+                      colSpan={9}
+                      className="text-center py-10 text-muted-foreground"
+                    >
+                      No results found
                     </TableCell>
                   </TableRow>
                 ) : (
-                  grades.map((student) => (
-                    <TableRow key={student.student_id}>
-                      <TableCell className="font-medium">
-                        {student.index_number}
+                  grades.map((g) => (
+                    <TableRow key={g.student_id}>
+                      <TableCell className="font-mono text-sm cursor-pointer">
+                        {g.index_number}
                       </TableCell>
-                      <TableCell>{student.full_name}</TableCell>
-                      <TableCell className="text-sm">
-                        {student.program_name}
+                      <TableCell className="cursor-pointer">
+                        {g.full_name}
                       </TableCell>
-                      <TableCell className="text-center text-sm">
-                        L{student.level}
+                      <TableCell
+                        className="max-w-[160px] truncate cursor-pointer"
+                        title={g.program_name}
+                      >
+                        {g.program_name}
                       </TableCell>
-                      <TableCell className="text-center text-sm">
-                        {student.procedure_score ? (
-                          <Badge variant="outline" className="bg-green-100">
-                            {student.procedure_score}/
-                            {student.procedure_max_score}
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="bg-yellow-100">
-                            Pending
-                          </Badge>
-                        )}
+                      <TableCell className="cursor-pointer">
+                        {g.level}
                       </TableCell>
-                      <TableCell className="text-center">
-                        {student.care_plan_completed ? (
-                          <Badge variant="outline" className="bg-green-100">
-                            {student.care_plan_score}/
-                            {student.care_plan_max_score}
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="bg-yellow-100">
-                            Pending
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-center font-medium">
-                        {/* {student.total_score} / {student.max_score} */}
-                        {student.total_score ? (
-                          <Badge variant="outline" className="bg-green-100">
-                            {student.total_score}/{student.max_score}
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="bg-yellow-100">
-                            Pending
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Badge variant="outline">
-                          {student.percentage
-                            ? student.percentage.toFixed(1)
-                            : 0}
-                          %
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Badge
-                          className={`${getGradeBadgeColor(
-                            student.grade,
-                          )} text-white hover:${getGradeBadgeColor(
-                            student.grade,
-                          )}`}
+                      <TableCell>
+                        <span
+                          className={`font-semibold ${g.percentage >= 60 ? "text-green-700" : g.percentage === 0 ? "text-muted-foreground" : "text-red-600"}`}
                         >
-                          {student.grade}
-                        </Badge>
+                          {g.percentage}%
+                        </span>
                       </TableCell>
-                      {/* <TableCell className="text-center">
-                        <div className="flex items-center justify-center gap-2">
-                          <span className="text-xs">
-                            {student.reconciled_count}/
-                            {getReconciliationLimit(student.program_name)}
-                          </span>
-                          {student.care_plan_completed ? (
-                            <CheckCircle className="h-4 w-4 text-green-600" />
-                          ) : (
-                            <XCircle className="h-4 w-4 text-gray-400" />
-                          )}
-                        </div>
-                      </TableCell> */}
+                      <TableCell>
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${GRADE_COLORS[g.grade] ?? GRADE_COLORS["N/A"]}`}
+                        >
+                          {g.grade}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {g.procedure_score}/{g.procedure_max_score}
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {g.care_plan_completed ? (
+                          `${g.care_plan_score}/${g.care_plan_max_score}`
+                        ) : (
+                          <span className="text-muted-foreground">–</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="font-medium text-sm">
+                        {g.total_score}/{g.max_score}
+                      </TableCell>
                     </TableRow>
                   ))
                 )}
@@ -560,6 +523,66 @@ useEffect(() => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Pagination controls */}
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <p className="text-sm text-muted-foreground">
+          Page {page} of {totalPages} · {totalCount} total
+        </p>
+        <div className="flex items-center gap-1">
+          <Button
+            variant="outline"
+            size="icon"
+            disabled={page <= 1 || fetching}
+            onClick={() => setPage(1)}
+          >
+            <ChevronsUpDown className="h-4 w-4 rotate-90" />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            disabled={page <= 1 || fetching}
+            onClick={() => setPage((p) => p - 1)}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+
+          {/* Page number pills */}
+          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+            const start = Math.max(1, Math.min(page - 2, totalPages - 4));
+            const n = start + i;
+            return (
+              <Button
+                key={n}
+                variant={n === page ? "default" : "outline"}
+                size="icon"
+                className="w-8 h-8 text-xs"
+                onClick={() => setPage(n)}
+                disabled={fetching}
+              >
+                {n}
+              </Button>
+            );
+          })}
+
+          <Button
+            variant="outline"
+            size="icon"
+            disabled={page >= totalPages || fetching}
+            onClick={() => setPage((p) => p + 1)}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            disabled={page >= totalPages || fetching}
+            onClick={() => setPage(totalPages)}
+          >
+            <ChevronsUpDown className="h-4 w-4 -rotate-90" />
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

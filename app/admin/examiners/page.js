@@ -34,7 +34,16 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Pencil, Trash2, Search, UserCheck, UserX, Download, Upload } from "lucide-react";
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  Search,
+  UserCheck,
+  UserX,
+  Download,
+  Upload,
+} from "lucide-react";
 import { toast } from "sonner";
 import DashboardSkeleton from "@/components/DashboardSkeleton";
 
@@ -64,7 +73,7 @@ export default function ExaminersPage() {
   const fetchExaminers = async () => {
     try {
       const res = await api.get("/exams/admin/examiners/");
-      setExaminers(res.data);
+      setExaminers(res.data.results);
       setLoading(false);
     } catch (err) {
       console.error(err);
@@ -85,7 +94,10 @@ export default function ExaminersPage() {
         if (!updateData.password) {
           delete updateData.password;
         }
-        await api.patch(`/exams/admin/examiners/${currentExaminerId}/`, updateData);
+        await api.patch(
+          `/exams/admin/examiners/${currentExaminerId}/`,
+          updateData,
+        );
         toast.success("Examiner updated successfully");
       } else {
         // Create new examiner
@@ -98,9 +110,9 @@ export default function ExaminersPage() {
     } catch (err) {
       console.error(err);
       const errorMsg =
-        err.response?.data?.password?.[0] || 
+        err.response?.data?.password?.[0] ||
         err.response?.data?.username?.[0] ||
-        `Failed to ${editMode ? 'update' : 'create'} examiner`;
+        `Failed to ${editMode ? "update" : "create"} examiner`;
       toast.error(errorMsg);
     } finally {
       setSubmitting(false);
@@ -149,15 +161,18 @@ export default function ExaminersPage() {
       const response = await api.get("/accounts/examiners/export/", {
         responseType: "blob",
       });
-      
+
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");
       link.href = url;
-      link.setAttribute("download", `examiners_${new Date().toISOString().split('T')[0]}.csv`);
+      link.setAttribute(
+        "download",
+        `examiners_${new Date().toISOString().split("T")[0]}.xlsx`,
+      );
       document.body.appendChild(link);
       link.click();
       link.remove();
-      
+
       toast.success("Examiners exported successfully");
     } catch (err) {
       console.error(err);
@@ -173,6 +188,7 @@ export default function ExaminersPage() {
     formData.append("file", file);
 
     try {
+      setLoading(true);
       const response = await api.post("/accounts/examiners/import/", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
@@ -180,14 +196,14 @@ export default function ExaminersPage() {
       });
 
       const { created, errors } = response.data;
-      
+
       if (created > 0) {
         toast.success(`Successfully imported ${created} examiner(s)`);
         fetchExaminers();
       }
-      
+
       if (errors && errors.length > 0) {
-        errors.forEach(error => toast.error(error));
+        errors.forEach((error) => toast.error(error));
       }
     } catch (err) {
       console.error(err);
@@ -197,6 +213,7 @@ export default function ExaminersPage() {
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
+      setLoading(false);
     }
   };
 
@@ -218,7 +235,7 @@ export default function ExaminersPage() {
       examiner.first_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       examiner.last_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       examiner.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      examiner.email.toLowerCase().includes(searchQuery.toLowerCase())
+      examiner.email.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   if (loading) {
@@ -241,25 +258,29 @@ export default function ExaminersPage() {
             <Download className="mr-2 h-4 w-4" />
             Export
           </Button>
-          
           {/* Import Button */}
-          <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+          <Button
+            variant="outline"
+            onClick={() => fileInputRef.current?.click()}
+          >
             <Upload className="mr-2 h-4 w-4" />
             Import
           </Button>
           <input
             ref={fileInputRef}
             type="file"
-            accept=".csv"
+            accept=".xlsx"
             onChange={handleImport}
             className="hidden"
           />
-          
           {/* Add Examiner Button */}
-          <Dialog open={dialogOpen} onOpenChange={(open) => {
-            setDialogOpen(open);
-            if (!open) resetForm();
-          }}>
+          <Dialog
+            open={dialogOpen}
+            onOpenChange={(open) => {
+              setDialogOpen(open);
+              if (!open) resetForm();
+            }}
+          >
             <DialogTrigger asChild>
               <Button onClick={resetForm}>
                 <Plus className="mr-2 h-4 w-4" />
@@ -272,8 +293,8 @@ export default function ExaminersPage() {
                   {editMode ? "Edit Examiner" : "Add New Examiner"}
                 </DialogTitle>
                 <DialogDescription>
-                  {editMode 
-                    ? "Update examiner account details" 
+                  {editMode
+                    ? "Update examiner account details"
                     : "Create a new examiner account"}
                 </DialogDescription>
               </DialogHeader>
@@ -362,9 +383,13 @@ export default function ExaminersPage() {
                     Cancel
                   </Button>
                   <Button type="submit" disabled={submitting}>
-                    {submitting 
-                      ? (editMode ? "Updating..." : "Creating...") 
-                      : (editMode ? "Update Examiner" : "Create Examiner")}
+                    {submitting
+                      ? editMode
+                        ? "Updating..."
+                        : "Creating..."
+                      : editMode
+                        ? "Update Examiner"
+                        : "Create Examiner"}
                   </Button>
                 </DialogFooter>
               </form>
@@ -420,7 +445,9 @@ export default function ExaminersPage() {
                     <TableCell>{examiner.email}</TableCell>
                     <TableCell>
                       <Badge
-                        className={examiner.is_active ? "bg-green-500" : "bg-red-500"}
+                        className={
+                          examiner.is_active ? "bg-green-500" : "bg-red-500"
+                        }
                       >
                         {examiner.is_active ? "Active" : "Inactive"}
                       </Badge>

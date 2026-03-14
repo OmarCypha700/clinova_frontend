@@ -11,9 +11,9 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, Lock, Save, CheckCircle, User } from "lucide-react";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
@@ -21,59 +21,32 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function CarePlanPage() {
   const router = useRouter();
-  const params = useParams();
-  const { programId, studentId } = params;
+  const { programId, studentId } = useParams();
 
-  const [student, setStudent] = useState(null);
-  const [program, setProgram] = useState(null);
-  const [carePlan, setCarePlan] = useState(null);
-  const [score, setScore] = useState("");
-  const [comments, setComments] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [student, setStudent]     = useState(null);
+  const [carePlan, setCarePlan]   = useState(null);
+  const [score, setScore]         = useState("");
+  const [loading, setLoading]     = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
-    try {
-      const [studentRes, programRes] = await Promise.all([
-        api.get(`/exams/students/${studentId}/`),
-        api.get(`/exams/programs/`),
-      ]);
-
-      setStudent(studentRes.data);
-      const foundProgram = programRes.data.find(
-        (p) => p.id === parseInt(programId)
-      );
-      setProgram(foundProgram);
-
-      // Check if care plan exists
-      try {
-        const carePlanRes = await api.get(
-          `/exams/students/${studentId}/programs/${programId}/care-plan/`
-        );
-        if (carePlanRes.data.exists !== false) {
+    Promise.all([
+      api.get(`/exams/students/${studentId}/`),
+      api.get(`/exams/students/${studentId}/programs/${programId}/care-plan/`),
+    ])
+      .then(([studentRes, carePlanRes]) => {
+        setStudent(studentRes.data);
+        if (carePlanRes.data?.exists !== false) {
           setCarePlan(carePlanRes.data);
         }
-      } catch (err) {
-        // Care plan doesn't exist yet
-        console.log("No existing care plan");
-      }
-
-      setLoading(false);
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to load data");
-      setLoading(false);
-    }
-  };
+      })
+      .catch(() => toast.error("Failed to load data"))
+      .finally(() => setLoading(false));
+  }, [studentId, programId]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    const scoreNum = parseInt(score);
+    const scoreNum = parseInt(score, 10);
     if (isNaN(scoreNum) || scoreNum < 0 || scoreNum > 20) {
       toast.error("Score must be between 0 and 20");
       return;
@@ -83,50 +56,59 @@ export default function CarePlanPage() {
     try {
       await api.post(
         `/exams/students/${studentId}/programs/${programId}/care-plan/`,
-        {
-          score: scoreNum,
-          comments: comments,
-        }
+        { score: scoreNum },
       );
-
       toast.success("Care plan submitted successfully");
-      fetchData(); // Refresh to show locked state
+
+      // Refresh to show locked read-only state
+      const res = await api.get(
+        `/exams/students/${studentId}/programs/${programId}/care-plan/`,
+      );
+      if (res.data?.exists !== false) setCarePlan(res.data);
     } catch (err) {
-      console.error(err);
       toast.error(err.response?.data?.error || "Failed to submit care plan");
     } finally {
       setSubmitting(false);
     }
   };
 
+  // ── Loading skeleton ──────────────────────────────────────────────────────
+
   if (loading) {
     return (
-      <div className="container mx-auto p-6">
-        <div className="animate-pulse space-y-6">
-          <div className="h-8 bg-gray-200 rounded w-1/3"></div>
-          <div className="h-96 bg-gray-200 rounded"></div>
+      <div className="container mx-auto p-6 space-y-6">
+        <Skeleton className="h-8 w-1/3" />
+        <div className="p-4 border rounded-lg">
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-10 w-10 rounded-full" />
+            <div className="space-y-2 flex-1">
+              <Skeleton className="h-4 w-40" />
+              <Skeleton className="h-3 w-28" />
+            </div>
+          </div>
         </div>
+        <Skeleton className="h-72 rounded-lg" />
       </div>
     );
   }
 
+  // ─────────────────────────────────────────────────────────────────────────
+
   return (
     <div className="container mx-auto p-6 space-y-6">
-      {/* Header */}
-
-      {/* Student Info Header */}
+      {/* Student info banner */}
       {student && (
-        <div className="mb-6 p-4 bg-gray-50 rounded-lg border">
+        <div className="p-4 bg-gray-50 rounded-lg border">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-primary/10 rounded-full">
+            <div className="p-2 bg-primary/10 rounded-full shrink-0">
               <User className="h-6 w-6 text-primary" />
             </div>
-            <div>
-              <h2 className="text-lg font-bold">{student.full_name}</h2>
+            <div className="min-w-0">
+              <h2 className="text-lg font-bold truncate">{student.full_name}</h2>
               <p className="text-sm text-muted-foreground">
-                Index Number: {student.index_number}
+                Index: {student.index_number}
               </p>
-              {student.program && (
+              {student.program?.name && (
                 <p className="text-sm text-muted-foreground">
                   Program: {student.program.name}
                 </p>
@@ -136,38 +118,43 @@ export default function CarePlanPage() {
         </div>
       )}
 
+      {/* Header */}
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => router.push(`/programs/${programId}/students/${studentId}`)}>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() =>
+            router.push(`/programs/${programId}/students/${studentId}`)
+          }
+        >
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <div>
-          <h1 className="text-3xl font-bold">Care Plan Assessment</h1>
-        </div>
+        <h1 className="text-3xl font-bold">Care Plan Assessment</h1>
       </div>
 
-      {/* Already Submitted Alert */}
-      {carePlan && carePlan.is_locked && (
+      {/* Already-submitted banner */}
+      {carePlan?.is_locked && (
         <Alert className="bg-green-50 border-green-200">
           <CheckCircle className="h-4 w-4 text-green-600" />
           <AlertDescription className="text-green-800">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-2">
               <div>
                 <p className="font-semibold">Care Plan Already Submitted</p>
-                <p className="text-sm mt-1">
+                <p className="text-sm mt-0.5">
                   Assessed by {carePlan.examiner_name} on{" "}
                   {new Date(carePlan.assessed_at).toLocaleString()}
                 </p>
               </div>
-              <Badge className="bg-green-600 text-white">
+              <Badge className="bg-green-600 text-white shrink-0">
                 {carePlan.score}/{carePlan.max_score} (
-                {carePlan.percentage.toFixed(1)}%)
+                {carePlan.percentage?.toFixed(1)}%)
               </Badge>
             </div>
           </AlertDescription>
         </Alert>
       )}
 
-      {/* Assessment Card */}
+      {/* Assessment card */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -185,9 +172,10 @@ export default function CarePlanPage() {
             )}
           </div>
         </CardHeader>
+
         <CardContent>
-          {carePlan && carePlan.is_locked ? (
-            // Read-only view
+          {/* Read-only view (already submitted) */}
+          {carePlan?.is_locked ? (
             <div className="space-y-6">
               <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
                 <div>
@@ -201,7 +189,7 @@ export default function CarePlanPage() {
                     Percentage
                   </Label>
                   <p className="text-3xl font-bold">
-                    {carePlan.percentage.toFixed(1)}%
+                    {carePlan.percentage?.toFixed(1)}%
                   </p>
                 </div>
               </div>
@@ -215,7 +203,7 @@ export default function CarePlanPage() {
                 </div>
               )}
 
-              <div className="text-sm text-muted-foreground">
+              <div className="text-sm text-muted-foreground space-y-1">
                 <p>
                   Assessed by:{" "}
                   <span className="font-medium">{carePlan.examiner_name}</span>
@@ -229,11 +217,11 @@ export default function CarePlanPage() {
               </div>
             </div>
           ) : (
-            // Scoring form
+            /* Scoring form */
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="score">
-                  Score (0-20) <span className="text-red-500">*</span>
+                  Score (0–20) <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="score"
@@ -242,33 +230,22 @@ export default function CarePlanPage() {
                   max="20"
                   value={score}
                   onChange={(e) => setScore(e.target.value)}
-                  placeholder="Enter score (0-20)"
+                  placeholder="Enter score (0–20)"
                   required
                   disabled={submitting}
+                  className="max-w-xs"
                 />
                 <p className="text-sm text-muted-foreground">
                   Maximum score: 20 points
                 </p>
               </div>
 
-              {/* <div className="space-y-2">
-                <Label htmlFor="comments">Comments (Optional)</Label>
-                <Textarea
-                  id="comments"
-                  value={comments}
-                  onChange={(e) => setComments(e.target.value)}
-                  placeholder="Add any comments about the care plan..."
-                  rows={5}
-                  disabled={submitting}
-                />
-              </div> */}
-
               <Alert className="bg-yellow-50 border-yellow-200">
                 <Lock className="h-4 w-4" />
                 <AlertDescription>
-                  <strong>Important:</strong> Once submitted, this assessment
-                  will be locked and cannot be edited. Please review your score
-                  carefully before submitting.
+                  <strong>Important:</strong> Once submitted, this assessment is
+                  locked and cannot be edited. Please review your score before
+                  submitting.
                 </AlertDescription>
               </Alert>
 
@@ -279,7 +256,7 @@ export default function CarePlanPage() {
                   className="flex-1"
                 >
                   <Save className="mr-2 h-4 w-4" />
-                  {submitting ? "Submitting..." : "Submit Assessment"}
+                  {submitting ? "Submitting…" : "Submit Assessment"}
                 </Button>
                 <Button
                   type="button"
