@@ -33,11 +33,6 @@ const navigation = [
     href: "/admin/examiners",
     icon: Users,
   },
-  // {
-  //   name: "Level",
-  //   href: "/admin/level",
-  //   icon: Users,
-  // },
   {
     name: "Students",
     href: "/admin/students",
@@ -58,6 +53,11 @@ const navigation = [
     href: "/admin/grades",
     icon: Award,
   },
+  {
+    name: "Settings",
+    href: "/admin/settings",
+    icon: Settings,
+  },
 ];
 
 function NavItems({ pathname, onNavigate }) {
@@ -74,7 +74,7 @@ function NavItems({ pathname, onNavigate }) {
               "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
               isActive
                 ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground",
             )}
             title={item.name}
           >
