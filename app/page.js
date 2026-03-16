@@ -153,7 +153,7 @@ export default function LoginPage() {
           </div>
 
           <Image
-            src="/uenr_logo.webp"
+            src="/cnmt_logo.webp"
             fetchPriority="high"
             alt="UENR Logo"
             width={90}
