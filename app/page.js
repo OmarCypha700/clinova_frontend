@@ -153,9 +153,9 @@ export default function LoginPage() {
           </div>
 
           <Image
-            src="/uenr_logo.webp"
+            src="/tanoso_logo.webp"
             fetchPriority="high"
-            alt="UENR Logo"
+            alt="Tanoso Logo"
             width={90}
             height={90}
             priority
