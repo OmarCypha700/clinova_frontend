@@ -915,9 +915,6 @@
 //   );
 // }
 
-
-
-
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -969,9 +966,20 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  Plus, Pencil, Trash2, Search, Download, Upload,
-  UserCheck, UserX, ChevronDown, FileText,
-  ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight,
+  Plus,
+  Pencil,
+  Trash2,
+  Search,
+  Download,
+  Upload,
+  UserCheck,
+  UserX,
+  ChevronDown,
+  FileText,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
   Users,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -992,45 +1000,45 @@ const PAGE_SIZES = [25, 50, 100, 200];
 
 export default function StudentsPage() {
   // Support data
-  const [programs, setPrograms]             = useState([]);
-  const [levels, setLevels]                 = useState([]);
+  const [programs, setPrograms] = useState([]);
+  const [levels, setLevels] = useState([]);
   const [supportLoading, setSupportLoading] = useState(true);
 
   // Paginated student data
-  const [students, setStudents]     = useState([]);
+  const [students, setStudents] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
-  const [fetching, setFetching]     = useState(false);
+  const [fetching, setFetching] = useState(false);
 
   // Pagination
-  const [page, setPage]         = useState(1);
+  const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
 
   // Filters / search
-  const [searchQuery, setSearchQuery]         = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [filterProgram, setFilterProgram]     = useState("all");
-  const [filterLevel, setFilterLevel]         = useState("all");
+  const [filterProgram, setFilterProgram] = useState("all");
+  const [filterLevel, setFilterLevel] = useState("all");
 
   // ── Selection ───────────────────────────────────────────────────────────────
   // selectedIds  – Set of IDs explicitly ticked (current + previous pages)
   // selectAllMode – true when user chose "Select all N students" across all pages
-  const [selectedIds, setSelectedIds]     = useState(new Set());
+  const [selectedIds, setSelectedIds] = useState(new Set());
   const [selectAllMode, setSelectAllMode] = useState(false);
 
   // CRUD dialogs
-  const [dialogOpen, setDialogOpen]             = useState(false);
-  const [editingStudent, setEditingStudent]     = useState(null);
-  const [deleteDialog, setDeleteDialog]         = useState({ open: false, id: null });
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingStudent, setEditingStudent] = useState(null);
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, id: null });
   const [bulkDeleteDialog, setBulkDeleteDialog] = useState(false);
-  const [bulkDeleting, setBulkDeleting]         = useState(false);
-  const [formData, setFormData]                 = useState(EMPTY_FORM);
-  const [submitting, setSubmitting]             = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [formData, setFormData] = useState(EMPTY_FORM);
+  const [submitting, setSubmitting] = useState(false);
 
   // Import
   const fileInputRef = useRef(null);
   const [importDialog, setImportDialog] = useState(false);
-  const [importFile, setImportFile]     = useState(null);
-  const [importing, setImporting]       = useState(false);
+  const [importFile, setImportFile] = useState(null);
+  const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState(null);
 
   // ── debounce search ──────────────────────────────────────────────────────────
@@ -1052,12 +1060,11 @@ export default function StudentsPage() {
   // ── load programs & levels once ──────────────────────────────────────────────
 
   useEffect(() => {
-    Promise.all([
-      api.get("/exams/programs/"),
-      api.get("/exams/levels/"),
-    ])
+    Promise.all([api.get("/exams/programs/"), api.get("/exams/levels/")])
       .then(([pr, lr]) => {
-        setPrograms(Array.isArray(pr.data) ? pr.data : (pr.data?.results ?? []));
+        setPrograms(
+          Array.isArray(pr.data) ? pr.data : (pr.data?.results ?? []),
+        );
         setLevels(Array.isArray(lr.data) ? lr.data : (lr.data?.results ?? []));
       })
       .catch(() => toast.error("Failed to load programs/levels"))
@@ -1070,9 +1077,9 @@ export default function StudentsPage() {
   // fetchStudents and handleBulkDelete use the same filters.
   const buildFilterParams = useCallback(() => {
     const params = new URLSearchParams();
-    if (debouncedSearch)          params.set("search", debouncedSearch);
-    if (filterProgram !== "all")  params.set("program_id", filterProgram);
-    if (filterLevel !== "all")    params.set("level_id", filterLevel);
+    if (debouncedSearch) params.set("search", debouncedSearch);
+    if (filterProgram !== "all") params.set("program_id", filterProgram);
+    if (filterLevel !== "all") params.set("level_id", filterLevel);
     return params;
   }, [debouncedSearch, filterProgram, filterLevel]);
 
@@ -1175,8 +1182,12 @@ export default function StudentsPage() {
     e.preventDefault();
     setSubmitting(true);
     try {
+      // console.log("Student Data:", formData);
       if (editingStudent) {
-        await api.patch(`/exams/admin/students/${editingStudent.id}/`, formData);
+        await api.patch(
+          `/exams/admin/students/${editingStudent.id}/`,
+          formData,
+        );
         toast.success("Student updated successfully");
       } else {
         await api.post("/exams/admin/students/", formData);
@@ -1198,7 +1209,8 @@ export default function StudentsPage() {
       index_number: student.index_number,
       full_name: student.full_name,
       program_id: student.program?.id ?? "",
-      level_id: student.level ?? "",
+      // Change later in the API to return level ID instead of name to avoid ambiguity
+      level: student.level ?? "",
       is_active: student.is_active,
     });
     setDialogOpen(true);
@@ -1240,7 +1252,8 @@ export default function StudentsPage() {
         while (hasMore) {
           params.set("page", String(currentPage));
           const res = await api.get(`/exams/admin/students/?${params}`);
-          const results = res.data?.results ?? (Array.isArray(res.data) ? res.data : []);
+          const results =
+            res.data?.results ?? (Array.isArray(res.data) ? res.data : []);
           allIds = allIds.concat(results.map((s) => s.id));
           hasMore = Boolean(res.data?.next) && results.length > 0;
           currentPage++;
@@ -1256,8 +1269,12 @@ export default function StudentsPage() {
         return;
       }
 
-      await api.post("/exams/students/bulk-delete/", { student_ids: idsToDelete });
-      toast.success(`Successfully deleted ${idsToDelete.length.toLocaleString()} student(s)`);
+      await api.post("/exams/students/bulk-delete/", {
+        student_ids: idsToDelete,
+      });
+      toast.success(
+        `Successfully deleted ${idsToDelete.length.toLocaleString()} student(s)`,
+      );
       setBulkDeleteDialog(false);
       clearSelection();
       fetchStudents();
@@ -1270,14 +1287,16 @@ export default function StudentsPage() {
 
   const handleToggleActive = async (id, currentStatus) => {
     setStudents((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, is_active: !s.is_active } : s))
+      prev.map((s) => (s.id === id ? { ...s, is_active: !s.is_active } : s)),
     );
     try {
       await api.post(`/exams/admin/students/${id}/toggle_active/`);
-      toast.success(`Student ${!currentStatus ? "activated" : "deactivated"} successfully`);
+      toast.success(
+        `Student ${!currentStatus ? "activated" : "deactivated"} successfully`,
+      );
     } catch {
       setStudents((prev) =>
-        prev.map((s) => (s.id === id ? { ...s, is_active: currentStatus } : s))
+        prev.map((s) => (s.id === id ? { ...s, is_active: currentStatus } : s)),
       );
       toast.error("Failed to update status");
     }
@@ -1295,7 +1314,9 @@ export default function StudentsPage() {
       const format = extension.replace(".", "");
       const params = buildFilterParams();
       params.set("export", format);
-      const res = await api.get(`/exams/admin/students/?${params}`, { responseType: "blob" });
+      const res = await api.get(`/exams/admin/students/?${params}`, {
+        responseType: "blob",
+      });
       const url = URL.createObjectURL(new Blob([res.data]));
       const a = document.createElement("a");
       a.href = url;
@@ -1310,7 +1331,9 @@ export default function StudentsPage() {
 
   const handleDownloadTemplate = async () => {
     try {
-      const res = await api.get("/exams/students/template/", { responseType: "blob" });
+      const res = await api.get("/exams/students/template/", {
+        responseType: "blob",
+      });
       const url = URL.createObjectURL(new Blob([res.data]));
       const a = document.createElement("a");
       a.href = url;
@@ -1353,7 +1376,9 @@ export default function StudentsPage() {
       });
       setImportResult(res.data);
       if (res.data.errors === 0) {
-        toast.success(`Import done — Created: ${res.data.created}, Updated: ${res.data.updated}`);
+        toast.success(
+          `Import done — Created: ${res.data.created}, Updated: ${res.data.updated}`,
+        );
         setTimeout(() => {
           setImportDialog(false);
           setImportFile(null);
@@ -1372,13 +1397,13 @@ export default function StudentsPage() {
 
   // ── pagination helpers ────────────────────────────────────────────────────────
 
-  const totalPages  = Math.max(1, Math.ceil(totalCount / pageSize));
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
   const showingFrom = totalCount === 0 ? 0 : (page - 1) * pageSize + 1;
-  const showingTo   = Math.min(page * pageSize, totalCount);
+  const showingTo = Math.min(page * pageSize, totalCount);
 
   const pagePills = (() => {
     const start = Math.max(1, Math.min(page - 2, totalPages - 4));
-    const end   = Math.min(totalPages, start + 4);
+    const end = Math.min(totalPages, start + 4);
     return Array.from({ length: end - start + 1 }, (_, i) => start + i);
   })();
 
@@ -1388,12 +1413,13 @@ export default function StudentsPage() {
 
   return (
     <div className="space-y-6">
-
       {/* ── Header ── */}
       <div className="flex flex-col justify-between gap-2">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Students</h2>
-          <p className="text-muted-foreground">Manage student records and enrollments</p>
+          <p className="text-muted-foreground">
+            Manage student records and enrollments
+          </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -1418,7 +1444,13 @@ export default function StudentsPage() {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={handleFileSelect} />
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".xlsx,.xls,.csv"
+            className="hidden"
+            onChange={handleFileSelect}
+          />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm">
@@ -1437,7 +1469,12 @@ export default function StudentsPage() {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <Button onClick={() => { resetForm(); setDialogOpen(true); }}>
+          <Button
+            onClick={() => {
+              resetForm();
+              setDialogOpen(true);
+            }}
+          >
             <Plus className="mr-2 h-4 w-4" />
             Add Student
           </Button>
@@ -1457,36 +1494,55 @@ export default function StudentsPage() {
         </div>
 
         <Select value={filterProgram} onValueChange={setFilterProgram}>
-          <SelectTrigger className="w-48"><SelectValue placeholder="All Programs" /></SelectTrigger>
+          <SelectTrigger className="w-48">
+            <SelectValue placeholder="All Programs" />
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Programs</SelectItem>
             {programs.map((p) => (
-              <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>
+              <SelectItem key={p.id} value={String(p.id)}>
+                {p.name}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
 
         <Select value={filterLevel} onValueChange={setFilterLevel}>
-          <SelectTrigger className="w-40"><SelectValue placeholder="All Levels" /></SelectTrigger>
+          <SelectTrigger className="w-40">
+            <SelectValue placeholder="All Levels" />
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Levels</SelectItem>
             {levels.map((l) => (
-              <SelectItem key={l.id} value={String(l.id)}>{l.name}</SelectItem>
+              <SelectItem key={l.id} value={String(l.id)}>
+                {l.name}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
 
-        <Select value={String(pageSize)} onValueChange={(v) => setPageSize(Number(v))}>
-          <SelectTrigger className="w-[110px]"><SelectValue /></SelectTrigger>
+        <Select
+          value={String(pageSize)}
+          onValueChange={(v) => setPageSize(Number(v))}
+        >
+          <SelectTrigger className="w-[110px]">
+            <SelectValue />
+          </SelectTrigger>
           <SelectContent>
             {PAGE_SIZES.map((s) => (
-              <SelectItem key={s} value={String(s)}>{s} / page</SelectItem>
+              <SelectItem key={s} value={String(s)}>
+                {s} / page
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
 
         {logicalSelectionCount > 0 && (
-          <Button variant="destructive" size="sm" onClick={() => setBulkDeleteDialog(true)}>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => setBulkDeleteDialog(true)}
+          >
             <Trash2 className="mr-2 h-4 w-4" />
             Delete ({logicalSelectionCount.toLocaleString()})
           </Button>
@@ -1498,7 +1554,10 @@ export default function StudentsPage() {
         <div className="flex items-center justify-between gap-3 px-4 py-2.5 rounded-lg bg-primary/5 border border-primary/20 text-sm">
           <div className="flex items-center gap-2 text-muted-foreground">
             <Users className="h-4 w-4 text-primary shrink-0" />
-            All <strong className="text-foreground">{selectedIds.size}</strong> students on this page are selected.
+            All <strong className="text-foreground">
+              {selectedIds.size}
+            </strong>{" "}
+            students on this page are selected.
           </div>
           <Button
             size="sm"
@@ -1506,7 +1565,9 @@ export default function StudentsPage() {
             className="shrink-0 border-primary/40 text-primary hover:bg-primary/10"
             onClick={() => setSelectAllMode(true)}
           >
-            Select all <strong className="ml-1">{totalCount.toLocaleString()}</strong> students
+            Select all{" "}
+            <strong className="ml-1">{totalCount.toLocaleString()}</strong>{" "}
+            students
           </Button>
         </div>
       )}
@@ -1516,7 +1577,8 @@ export default function StudentsPage() {
         <div className="flex items-center justify-between gap-3 px-4 py-2.5 rounded-lg bg-primary/5 border border-primary/20 text-sm">
           <div className="flex items-center gap-2">
             <Users className="h-4 w-4 text-primary shrink-0" />
-            All <strong>{totalCount.toLocaleString()}</strong> students matching the current filters are selected.
+            All <strong>{totalCount.toLocaleString()}</strong> students matching
+            the current filters are selected.
           </div>
           <Button
             size="sm"
@@ -1534,12 +1596,19 @@ export default function StudentsPage() {
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center justify-between text-base">
             <span>
-              {fetching ? "Loading…" : `${showingFrom}–${showingTo} of ${totalCount} students`}
+              {fetching
+                ? "Loading…"
+                : `${showingFrom}–${showingTo} of ${totalCount} students`}
             </span>
             {logicalSelectionCount > 0 && (
               <span className="text-sm font-normal text-muted-foreground">
                 {logicalSelectionCount.toLocaleString()} selected
-                <button className="ml-2 underline text-xs" onClick={clearSelection}>Clear</button>
+                <button
+                  className="ml-2 underline text-xs"
+                  onClick={clearSelection}
+                >
+                  Clear
+                </button>
               </span>
             )}
           </CardTitle>
@@ -1552,7 +1621,9 @@ export default function StudentsPage() {
                 <TableHead className="w-12 pl-4">
                   <Checkbox
                     checked={selectAllMode || allOnPageChecked}
-                    ref={(el) => { if (el) el.indeterminate = someOnPageChecked; }}
+                    ref={(el) => {
+                      if (el) el.indeterminate = someOnPageChecked;
+                    }}
                     onCheckedChange={handleHeaderCheckbox}
                     aria-label="Select all on this page"
                   />
@@ -1571,13 +1642,18 @@ export default function StudentsPage() {
                 Array.from({ length: 8 }).map((_, i) => (
                   <TableRow key={i}>
                     {Array.from({ length: 7 }).map((__, j) => (
-                      <TableCell key={j}><div className="h-4 bg-muted animate-pulse rounded" /></TableCell>
+                      <TableCell key={j}>
+                        <div className="h-4 bg-muted animate-pulse rounded" />
+                      </TableCell>
                     ))}
                   </TableRow>
                 ))
               ) : students.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-10 text-muted-foreground">
+                  <TableCell
+                    colSpan={7}
+                    className="text-center py-10 text-muted-foreground"
+                  >
                     No students found
                   </TableCell>
                 </TableRow>
@@ -1593,28 +1669,61 @@ export default function StudentsPage() {
                       <TableCell className="pl-4">
                         <Checkbox
                           checked={checked}
-                          onCheckedChange={(c) => handleRowCheckbox(student.id, c)}
+                          onCheckedChange={(c) =>
+                            handleRowCheckbox(student.id, c)
+                          }
                           aria-label={`Select ${student.full_name}`}
                         />
                       </TableCell>
-                      <TableCell className="font-medium font-mono text-sm">{student.index_number}</TableCell>
+                      <TableCell className="font-medium font-mono text-sm">
+                        {student.index_number}
+                      </TableCell>
                       <TableCell>{student.full_name}</TableCell>
                       <TableCell>{student.program?.name ?? "—"}</TableCell>
                       <TableCell>{student.level_name ?? "—"}</TableCell>
                       <TableCell>
-                        <Badge className={student.is_active ? "bg-green-600 hover:bg-green-700" : "bg-red-500 hover:bg-red-600"}>
+                        <Badge
+                          className={
+                            student.is_active
+                              ? "bg-green-600 hover:bg-green-700"
+                              : "bg-red-500 hover:bg-red-600"
+                          }
+                        >
                           {student.is_active ? "Active" : "Inactive"}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right pr-4">
                         <div className="flex items-center justify-end gap-1">
-                          <Button variant="ghost" size="icon" onClick={() => handleToggleActive(student.id, student.is_active)} title={student.is_active ? "Deactivate" : "Activate"}>
-                            {student.is_active ? <UserX className="h-4 w-4 text-red-500" /> : <UserCheck className="h-4 w-4 text-green-500" />}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() =>
+                              handleToggleActive(student.id, student.is_active)
+                            }
+                            title={
+                              student.is_active ? "Deactivate" : "Activate"
+                            }
+                          >
+                            {student.is_active ? (
+                              <UserX className="h-4 w-4 text-red-500" />
+                            ) : (
+                              <UserCheck className="h-4 w-4 text-green-500" />
+                            )}
                           </Button>
-                          <Button variant="ghost" size="icon" onClick={() => handleEdit(student)}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleEdit(student)}
+                          >
                             <Pencil className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" onClick={() => setDeleteDialog({ open: true, id: student.id })}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() =>
+                              setDeleteDialog({ open: true, id: student.id })
+                            }
+                          >
                             <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
                         </div>
@@ -1635,13 +1744,53 @@ export default function StudentsPage() {
             Page {page} of {totalPages} &middot; {totalCount} total students
           </p>
           <div className="flex items-center gap-1">
-            <Button variant="outline" size="icon" disabled={page <= 1} onClick={() => setPage(1)} title="First page"><ChevronsLeft className="h-4 w-4" /></Button>
-            <Button variant="outline" size="icon" disabled={page <= 1} onClick={() => setPage((p) => p - 1)} title="Previous page"><ChevronLeft className="h-4 w-4" /></Button>
+            <Button
+              variant="outline"
+              size="icon"
+              disabled={page <= 1}
+              onClick={() => setPage(1)}
+              title="First page"
+            >
+              <ChevronsLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => p - 1)}
+              title="Previous page"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
             {pagePills.map((n) => (
-              <Button key={n} variant={n === page ? "default" : "outline"} size="icon" className="w-8 h-8 text-xs" onClick={() => setPage(n)}>{n}</Button>
+              <Button
+                key={n}
+                variant={n === page ? "default" : "outline"}
+                size="icon"
+                className="w-8 h-8 text-xs"
+                onClick={() => setPage(n)}
+              >
+                {n}
+              </Button>
             ))}
-            <Button variant="outline" size="icon" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)} title="Next page"><ChevronRight className="h-4 w-4" /></Button>
-            <Button variant="outline" size="icon" disabled={page >= totalPages} onClick={() => setPage(totalPages)} title="Last page"><ChevronsRight className="h-4 w-4" /></Button>
+            <Button
+              variant="outline"
+              size="icon"
+              disabled={page >= totalPages}
+              onClick={() => setPage((p) => p + 1)}
+              title="Next page"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              disabled={page >= totalPages}
+              onClick={() => setPage(totalPages)}
+              title="Last page"
+            >
+              <ChevronsRight className="h-4 w-4" />
+            </Button>
           </div>
         </div>
       )}
@@ -1650,54 +1799,122 @@ export default function StudentsPage() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{editingStudent ? "Edit Student" : "Add New Student"}</DialogTitle>
-            <DialogDescription>{editingStudent ? "Update student information" : "Create a new student record"}</DialogDescription>
+            <DialogTitle>
+              {editingStudent ? "Edit Student" : "Add New Student"}
+            </DialogTitle>
+            <DialogDescription>
+              {editingStudent
+                ? "Update student information"
+                : "Create a new student record"}
+            </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="index_number">Index Number</Label>
-              <Input id="index_number" value={formData.index_number} onChange={(e) => setFormData({ ...formData, index_number: e.target.value })} required />
+              <Input
+                id="index_number"
+                value={formData.index_number}
+                onChange={(e) =>
+                  setFormData({ ...formData, index_number: e.target.value })
+                }
+                required
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="full_name">Full Name</Label>
-              <Input id="full_name" value={formData.full_name} onChange={(e) => setFormData({ ...formData, full_name: e.target.value })} required />
+              <Input
+                id="full_name"
+                value={formData.full_name}
+                onChange={(e) =>
+                  setFormData({ ...formData, full_name: e.target.value })
+                }
+                required
+              />
             </div>
             <div className="space-y-2">
               <Label>Program</Label>
-              <Select value={String(formData.program_id || "")} onValueChange={(v) => setFormData({ ...formData, program_id: parseInt(v) })}>
-                <SelectTrigger><SelectValue placeholder="Select program" /></SelectTrigger>
+              <Select
+                value={String(formData.program_id || "")}
+                onValueChange={(v) =>
+                  setFormData({ ...formData, program_id: parseInt(v) })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select program" />
+                </SelectTrigger>
                 <SelectContent>
-                  {programs.map((p) => <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>)}
+                  {programs.map((p) => (
+                    <SelectItem key={p.id} value={String(p.id)}>
+                      {p.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
               <Label>Level</Label>
-              <Select value={String(formData.level_id || "")} onValueChange={(v) => setFormData({ ...formData, level_id: parseInt(v) })}>
-                <SelectTrigger><SelectValue placeholder="Select level" /></SelectTrigger>
+              <Select
+                value={String(formData.level || "")}
+                onValueChange={(v) =>
+                  setFormData({ ...formData, level: parseInt(v) })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select level" />
+                </SelectTrigger>
                 <SelectContent>
-                  {levels.map((l) => <SelectItem key={l.id} value={String(l.id)}>{l.name}</SelectItem>)}
+                  {levels.map((l) => (
+                    <SelectItem key={l.id} value={String(l.id)}>
+                      {l.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => { setDialogOpen(false); resetForm(); }}>Cancel</Button>
-              <Button type="submit" disabled={submitting}>{submitting ? "Saving…" : editingStudent ? "Update Student" : "Create Student"}</Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setDialogOpen(false);
+                  resetForm();
+                }}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={submitting}>
+                {submitting
+                  ? "Saving…"
+                  : editingStudent
+                    ? "Update Student"
+                    : "Create Student"}
+              </Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
 
       {/* ── Delete single ── */}
-      <AlertDialog open={deleteDialog.open} onOpenChange={(open) => setDeleteDialog({ ...deleteDialog, open })}>
+      <AlertDialog
+        open={deleteDialog.open}
+        onOpenChange={(open) => setDeleteDialog({ ...deleteDialog, open })}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>This will permanently delete the student record and cannot be undone.</AlertDialogDescription>
+            <AlertDialogDescription>
+              This will permanently delete the student record and cannot be
+              undone.
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive">Delete</AlertDialogAction>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive"
+            >
+              Delete
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -1707,16 +1924,24 @@ export default function StudentsPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              Delete {logicalSelectionCount.toLocaleString()} student{logicalSelectionCount !== 1 ? "s" : ""}?
+              Delete {logicalSelectionCount.toLocaleString()} student
+              {logicalSelectionCount !== 1 ? "s" : ""}?
             </AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-3">
-                <p>This action cannot be undone. All selected student records will be permanently removed.</p>
+                <p>
+                  This action cannot be undone. All selected student records
+                  will be permanently removed.
+                </p>
                 {selectAllMode && (
                   <div className="flex items-start gap-2 p-3 rounded-md bg-destructive/10 border border-destructive/20 text-destructive text-sm font-medium">
                     <span>⚠</span>
                     <span>
-                      You are about to delete <strong>all {totalCount.toLocaleString()} students</strong> matching the current filters. This cannot be reversed.
+                      You are about to delete{" "}
+                      <strong>
+                        all {totalCount.toLocaleString()} students
+                      </strong>{" "}
+                      matching the current filters. This cannot be reversed.
                     </span>
                   </div>
                 )}
@@ -1724,13 +1949,17 @@ export default function StudentsPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={bulkDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={bulkDeleting}>
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleBulkDelete}
               disabled={bulkDeleting}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {bulkDeleting ? "Deleting…" : `Delete ${logicalSelectionCount.toLocaleString()} student${logicalSelectionCount !== 1 ? "s" : ""}`}
+              {bulkDeleting
+                ? "Deleting…"
+                : `Delete ${logicalSelectionCount.toLocaleString()} student${logicalSelectionCount !== 1 ? "s" : ""}`}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1741,28 +1970,42 @@ export default function StudentsPage() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Import Students</DialogTitle>
-            <DialogDescription>Upload an Excel or CSV file to import student records</DialogDescription>
+            <DialogDescription>
+              Upload an Excel or CSV file to import student records
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             {importFile && (
               <div className="p-4 bg-muted rounded-lg">
                 <p className="text-sm font-medium">Selected file:</p>
-                <p className="text-sm text-muted-foreground">{importFile.name}</p>
+                <p className="text-sm text-muted-foreground">
+                  {importFile.name}
+                </p>
               </div>
             )}
             {importResult && (
-              <div className={`p-4 rounded-lg border ${importResult.errors === 0 ? "bg-green-50 border-green-200" : "bg-yellow-50 border-yellow-200"}`}>
+              <div
+                className={`p-4 rounded-lg border ${importResult.errors === 0 ? "bg-green-50 border-green-200" : "bg-yellow-50 border-yellow-200"}`}
+              >
                 <p className="font-semibold mb-2">Import Results:</p>
                 <ul className="text-sm space-y-1">
                   <li>✓ Created: {importResult.created}</li>
                   <li>✓ Updated: {importResult.updated}</li>
-                  {importResult.errors > 0 && <li className="text-red-600">✗ Errors: {importResult.errors}</li>}
+                  {importResult.errors > 0 && (
+                    <li className="text-red-600">
+                      ✗ Errors: {importResult.errors}
+                    </li>
+                  )}
                 </ul>
                 {importResult.error_details?.length > 0 && (
                   <div className="mt-3">
                     <p className="text-sm font-medium mb-1">Error Details:</p>
                     <ul className="text-xs space-y-1 max-h-32 overflow-y-auto">
-                      {importResult.error_details.map((err, i) => <li key={i} className="text-red-600">{err}</li>)}
+                      {importResult.error_details.map((err, i) => (
+                        <li key={i} className="text-red-600">
+                          {err}
+                        </li>
+                      ))}
                     </ul>
                   </div>
                 )}
@@ -1770,8 +2013,23 @@ export default function StudentsPage() {
             )}
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => { setImportDialog(false); setImportFile(null); setImportResult(null); }}>Cancel</Button>
-            <Button onClick={handleImportSubmit} disabled={importing || !importFile}>{importing ? "Importing…" : "Import"}</Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setImportDialog(false);
+                setImportFile(null);
+                setImportResult(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleImportSubmit}
+              disabled={importing || !importFile}
+            >
+              {importing ? "Importing…" : "Import"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
